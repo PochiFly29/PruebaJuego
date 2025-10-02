@@ -20,6 +20,7 @@ public class Tarro {
 	   private int tiempoHeridoMax=50;
 	   private int tiempoHerido;
 	   
+	   
 	   public Tarro(Texture tex, Sound ss) {
 		   bucketImage = tex;
 		   sonidoHerido = ss;
@@ -41,7 +42,6 @@ public class Tarro {
 		
 	
 	   public void crear() {
-
 		      bucket = new Rectangle();
 		      bucket.x = 800 / 2 - 64 / 2;
 		      bucket.y = 20;
