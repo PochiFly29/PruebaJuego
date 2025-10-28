@@ -11,96 +11,132 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
 
 public class Lluvia {
-	private Array<Rectangle> rainDropsPos;
-	private Array<Integer> rainDropsType;
+
+    // Lista de objetos polimórficos
+    private Array<ObjetoQueCae> objetosEnPantalla;
+
     private long lastDropTime;
-    private Texture gotaBuena;
-    private Texture gotaMala;
-    private Sound dropSound;
+
+    // Almacén de assets para inyectar en los objetos
+    private Texture texGotaBuena;
+    private Texture texGotaMala;
+    private Texture texVidaExtra;
+    private Sound sndDrop;
+    private Sound sndVida;
     private Music rainMusic;
-	   
-	public Lluvia(Texture gotaBuena, Texture gotaMala, Sound ss, Music mm) {
-		rainMusic = mm;
-		dropSound = ss;
-		this.gotaBuena = gotaBuena;
-		this.gotaMala = gotaMala;
-	}
-	
-	public void crear() {
-		rainDropsPos = new Array<Rectangle>();
-		rainDropsType = new Array<Integer>();
-		crearGotaDeLluvia();
-	      // start the playback of the background music immediately
-	      rainMusic.setLooping(true);
-	      rainMusic.play();
-	}
-	
-	private void crearGotaDeLluvia() {
-	      Rectangle raindrop = new Rectangle();
-	      raindrop.x = MathUtils.random(0, 800-64);
-	      raindrop.y = 480;
-	      raindrop.width = 64;
-	      raindrop.height = 64;
-	      rainDropsPos.add(raindrop);
-	      // ver el tipo de gota
-	      if (MathUtils.random(1,10)<5)	    	  
-	         rainDropsType.add(1);
-	      else 
-	    	 rainDropsType.add(2);
-	      lastDropTime = TimeUtils.nanoTime();
-	   }
-	
-   public boolean actualizarMovimiento(Tarro tarro) { 
-	   // generar gotas de lluvia 
-	   if(TimeUtils.nanoTime() - lastDropTime > 100000000) crearGotaDeLluvia();
-	  
-	   
-	   // revisar si las gotas cayeron al suelo o chocaron con el tarro
-	   for (int i=0; i < rainDropsPos.size; i++ ) {
-		  Rectangle raindrop = rainDropsPos.get(i);
-	      raindrop.y -= 300 * Gdx.graphics.getDeltaTime();
-	      //cae al suelo y se elimina
-	      if(raindrop.y + 64 < 0) {
-	    	  rainDropsPos.removeIndex(i); 
-	    	  rainDropsType.removeIndex(i);
-	      }
-	      if(raindrop.overlaps(tarro.getArea())) { //la gota choca con el tarro
-	    	if(rainDropsType.get(i)==1) { // gota dañina
-	    	  tarro.dañar();
-	    	  if (tarro.getVidas()<=0)
-	    		 return false; // si se queda sin vidas retorna falso /game over
-	    	  rainDropsPos.removeIndex(i);
-	          rainDropsType.removeIndex(i);
-	      	}else { // gota a recolectar
-	    	  tarro.sumarPuntos(10);
-	          dropSound.play();
-	          rainDropsPos.removeIndex(i);
-	          rainDropsType.removeIndex(i);
-	      	}
-	      }
-	   } 
-	  return true; 
-   }
-   
-   public void actualizarDibujoLluvia(SpriteBatch batch) { 
-	   
-	  for (int i=0; i < rainDropsPos.size; i++ ) {
-		  Rectangle raindrop = rainDropsPos.get(i);
-		  if(rainDropsType.get(i)==1) // gota dañina
-	         batch.draw(gotaMala, raindrop.x, raindrop.y); 
-		  else
-			 batch.draw(gotaBuena, raindrop.x, raindrop.y); 
-	   }
-   }
-   public void destruir() {
-      dropSound.dispose();
-      rainMusic.dispose();
-   }
-   public void pausar() {
-	  rainMusic.stop();
-   }
-   public void continuar() {
-	  rainMusic.play();
-   }
-   
+
+    private float velocidadCaida = 300f;
+    private float velocidadHorizontal = 100f;
+    private float anguloRotacion = 25f;
+
+    public Lluvia(Texture gotaBuena, Texture gotaMala, Texture vidaExtra, Sound dropSound, Sound lifeSound, Music mm) {
+        this.rainMusic = mm;
+        this.sndDrop = dropSound;
+        this.sndVida = lifeSound;
+        this.texGotaBuena = gotaBuena;
+        this.texGotaMala = gotaMala;
+        this.texVidaExtra = vidaExtra;
+    }
+
+    public void crear() {
+        objetosEnPantalla = new Array<ObjetoQueCae>();
+        crearObjetoQueCae();
+
+        rainMusic.setLooping(true);
+        rainMusic.play();
+    }
+
+    // Lógica del Spawner
+    private void crearObjetoQueCae() {
+
+        // --- 1. CÁLCULO DE SPAWN CORREGIDO ---
+
+        // Constantes del juego
+        float altoPantalla = 480;
+        float anchoPantalla = 800;
+        float anchoGota = 64; // Asumiendo hitbox.width = 64
+
+        // Calculamos cuánto se moverá una gota horizontalmente en toda su caída
+        float tiempoDeCaida = altoPantalla / velocidadCaida; // (ej: 480 / 300 = 1.6 seg)
+        float derivaHorizontal = velocidadHorizontal * tiempoDeCaida; // (ej: 100 * 1.6 = 160 pixeles)
+
+        // Calculamos el nuevo rango de spawn
+        // El objetivo es que las gotas ATERRICEN entre x=0 y x=(800-64)
+
+        // Para aterrizar en x=0, debe spawnear en (0 - deriva)
+        float spawnMinX = 0 - derivaHorizontal;
+
+        // Para aterrizar en x=(800-64), debe spawnear en ( (800-64) - deriva)
+        float spawnMaxX = (anchoPantalla - anchoGota) - derivaHorizontal;
+
+        // Creamos el hitbox con el nuevo rango X
+        Rectangle hitbox = new Rectangle();
+        hitbox.x = MathUtils.random(spawnMinX, spawnMaxX); // ¡Rango corregido!
+        hitbox.y = 480; // (Spawn Y sin cambios)
+        hitbox.width = anchoGota;
+        hitbox.height = 64;
+
+
+        // --- 2. LÓGICA DE CREACIÓN (con ángulo corregido) ---
+
+        // Creamos la estrategia diagonal usando nuestras variables
+        IComportamientoMovimiento movimiento = new MovimientoDiagonal(
+                velocidadCaida,
+                velocidadHorizontal,
+                anguloRotacion // <-- ¡Ángulo positivo!
+        );
+
+
+        // Lógica de % de spawn (con tu balanceo de 1% de vida)
+        float chance = MathUtils.random();
+
+        if (chance < 0.70f) { // 70% Gota Buena
+            objetosEnPantalla.add(new GotaBuena(texGotaBuena, hitbox, movimiento, sndDrop));
+        } else if (chance < 0.99f) { // 29% Gota Mala
+            objetosEnPantalla.add(new GotaMala(texGotaMala, hitbox, movimiento));
+        } else { // 1% Vida Extra
+            objetosEnPantalla.add(new VidaExtra(texVidaExtra, hitbox, movimiento, sndVida));
+        }
+
+        lastDropTime = TimeUtils.nanoTime();
+    }
+
+    // Actualiza todos los objetos en pantalla
+    public void actualizarMovimiento(Tarro tarro) {
+        // Generar nuevos objetos
+        if (TimeUtils.nanoTime() - lastDropTime > 100000000)
+            crearObjetoQueCae();
+
+        // Iterar al revés para eliminación segura
+        for (int i = objetosEnPantalla.size - 1; i >= 0; i--) {
+            ObjetoQueCae objeto = objetosEnPantalla.get(i);
+
+            // Llamar al Template Method
+            objeto.update(Gdx.graphics.getDeltaTime(), tarro);
+
+            // Limpiar objetos marcados
+            if (objeto.marcadoParaEliminar) {
+                objetosEnPantalla.removeIndex(i);
+            }
+        }
+    }
+
+    // Dibuja todos los objetos en pantalla
+    public void actualizarDibujoLluvia(SpriteBatch batch) {
+        for (ObjetoQueCae objeto : objetosEnPantalla) {
+            objeto.dibujar(batch);
+        }
+    }
+
+    public void destruir() {
+        rainMusic.dispose();
+    }
+
+    public void pausar() {
+        rainMusic.stop();
+    }
+
+    public void continuar() {
+        rainMusic.play();
+    }
 }
