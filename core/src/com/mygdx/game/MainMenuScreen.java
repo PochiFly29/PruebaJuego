@@ -40,7 +40,7 @@ public class MainMenuScreen implements Screen {
 		batch.setProjectionMatrix(camera.combined);
 
 		batch.begin();
-		font.draw(batch, "¡Bienvenido a Recolecta Gotas!", 210, 340);
+		font.draw(batch, "¡Bienvenido a Recolecta Gotas!", 205, 340);
 		font.draw(batch, "Toca en cualquier lugar para comenzar", 160, 200);
 
 		batch.end();

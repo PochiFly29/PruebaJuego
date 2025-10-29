@@ -23,6 +23,6 @@ public class GotaDaño extends Objeto {
         tarro.dañar();
         // Retorna true si aún tiene vidas (continúa el juego)
         // Retorna false si se quedó sin vidas → Game Over
-        return tarro.getVidas() > 0;
+        return false;
     }
 }

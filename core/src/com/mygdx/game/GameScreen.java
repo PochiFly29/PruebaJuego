@@ -1,6 +1,7 @@
 package com.mygdx.game;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
@@ -64,7 +65,13 @@ public class GameScreen implements Screen {
         ScreenUtils.clear(0, 0, 0.2f, 1);
         camera.update();
         batch.setProjectionMatrix(camera.combined);
-
+        if ((Gdx.input.isKeyJustPressed(Input.Keys.R))){
+            game.setScreen(new GameScreen(game));
+            dispose();
+            return;
+        } else if ((Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE))){
+            pause();
+        }
         batch.begin();
         font.draw(batch, "Gotas totales: " + tarro.getPuntos(), 5, 475);
         font.draw(batch, "Vidas : " + tarro.getVidas(), 670, 475);

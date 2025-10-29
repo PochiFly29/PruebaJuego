@@ -1,6 +1,7 @@
 package com.mygdx.game;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -38,11 +39,11 @@ public class GameOverScreen implements Screen {
 
 		batch.begin();
 		font.draw(batch, "GAME OVER ", 100, 200);
-		font.draw(batch, "Toca en cualquier lado para reiniciar.", 100, 100);
+		font.draw(batch, "Presiona cualquier tecla para reiniciar.", 100, 100);
 
 		batch.end();
 
-		if (Gdx.input.isTouched()) {
+		if (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY)) {
 			game.setScreen(new GameScreen(game));
 			dispose();
 		}
