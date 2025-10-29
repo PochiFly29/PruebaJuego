@@ -11,10 +11,24 @@ public class GotaMala extends ObjetoQueCae {
 
     @Override
     protected void aplicarEfecto(Tarro tarro) {
-        // El tarro se encarga de su sonido y estado "herido"
+
+        // Chequear si el escudo está activo
+        if (GameManager.getInstance().isEscudoActivo()) {
+            // El escudo para el golpe y se consume
+            GameManager.getInstance().consumirEscudo();
+            // (Opcional: añadir sonido de "escudo roto")
+            return; // No hace daño
+        }
+
+        // Comportamiento normal (si no hay escudo)
         if (!tarro.estaHerido()) {
-            // 1. Herir al tarro
             tarro.dañar();
         }
+    }
+
+
+    @Override
+    protected boolean esAtraible() {
+        return false;
     }
 }

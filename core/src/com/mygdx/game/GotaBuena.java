@@ -20,4 +20,9 @@ public class GotaBuena extends ObjetoQueCae {
         GameManager.getInstance().sumarPuntos(puntosQueDa);
         dropSound.play();
     }
+
+    @Override
+    protected boolean esAtraible() {
+        return true;
+    }
 }

@@ -22,21 +22,33 @@ public class Lluvia {
     private Texture texVidaExtra;
     private Sound sndDrop;
     private Sound sndVida;
+    private Sound sndPowerup;
     private Music rainMusic;
+    private Texture texEscudo;
+    private Texture texIman;
+    private Texture texTormenta;
 
-    public Lluvia(Texture gotaBuena, Texture gotaMala, Texture vidaExtra, Sound dropSound, Sound lifeSound, Music mm) {
+    private final long SPAWN_TIMER_NORMAL = 100000000; // 0.1s
+    private final long SPAWN_TIMER_TORMENTA = 30000000; // 0.03s
+
+    public Lluvia(Texture gotaBuena, Texture gotaMala, Texture vidaExtra,
+                  Texture texEscudo, Texture texIman, Texture texTormenta,
+                  Sound dropSound, Sound lifeSound, Sound powerupSound, Music mm) {
         this.rainMusic = mm;
         this.sndDrop = dropSound;
         this.sndVida = lifeSound;
+        this.sndPowerup = powerupSound; // Asignar sonido
         this.texGotaBuena = gotaBuena;
         this.texGotaMala = gotaMala;
         this.texVidaExtra = vidaExtra;
+        this.texEscudo = texEscudo; // Asignar texturas
+        this.texIman = texIman;
+        this.texTormenta = texTormenta;
     }
 
     public void crear() {
         objetosEnPantalla = new Array<ObjetoQueCae>();
         crearObjetoQueCae();
-
         rainMusic.setLooping(true);
         rainMusic.play();
     }
@@ -44,72 +56,124 @@ public class Lluvia {
     // Lógica de la Fábrica
     private void crearObjetoQueCae() {
 
+        GameManager gm = GameManager.getInstance();
+
         // 1. Preguntar al Cerebro si estamos en pausa
-        if (GameManager.getInstance().estaEnPausa()) {
+        if (gm.estaEnPausa()) {
             lastDropTime = TimeUtils.nanoTime();
             return;
         }
 
-        // 2. Decidir qué crear (Powerup o Gota)
-        boolean esPowerup = false;
-        float chance = MathUtils.random();
-        if (chance > 0.99f) { // 1% de chance de Powerup (VidaExtra)
-            esPowerup = true;
-        }
+        // 2. Lógica de Spawneo (Normal vs Tormenta)
+        if (gm.getEstadoActual() == GameManager.EstadoJuego.TORMENTA_ESPECIAL) {
+            // --- MODO TORMENTA ---
+            // Solo crea Gotas Buenas muy rápido
+            IComportamientoMovimiento mov = gm.getMovimientoParaGota();
+            float deriva = mov.getDerivaHorizontal(480, mov.getVelocidadVertical());
+            float rot = mov.getRotacion();
+            float spawnX = MathUtils.random(0, 800 - 64) - deriva;
 
-        // 3. Pedir al Cerebro la Estrategia de movimiento
-        IComportamientoMovimiento movimiento;
-        if (esPowerup) {
-            movimiento = GameManager.getInstance().getMovimientoParaPowerup();
+            Rectangle hitbox = new Rectangle(spawnX, 480, 64, 64);
+            ObjetoQueCae nuevaGota = new GotaBuena(texGotaBuena, hitbox, mov, sndDrop);
+            nuevaGota.setRotacion(rot);
+            objetosEnPantalla.add(nuevaGota);
+
         } else {
-            movimiento = GameManager.getInstance().getMovimientoParaGota();
-        }
+            // --- MODO NORMAL ---
+            float chance = MathUtils.random(); // Valor entre 0.0 y 1.0
+            boolean esPowerup = false;
+            int tipoPowerup = 0; // 1:Vida, 2:Escudo, 3:Iman, 4:Tormenta
 
-        // 4. Preguntar a la Estrategia sus propiedades
-        float altoPantalla = 480;
-        float velocidadVertical = movimiento.getVelocidadVertical();
-        float derivaHorizontal = movimiento.getDerivaHorizontal(altoPantalla, velocidadVertical);
-        float rotacion = movimiento.getRotacion();
+            // --- LÓGICA DE PROBABILIDAD REVISADA ---
+            // 70% Gota Buena (chance < 0.70)
+            // 27% Gota Mala (chance >= 0.70 y < 0.97)
+            // 2% Vida Extra (chance >= 0.97 y < 0.99)
+            // 1% Poderes Raros (Escudo, Imán, Tormenta) (chance >= 0.99)
+            // -------------------------------------------
 
-        // 5. Calcular Spawn (Genérico, basado en la deriva)
-        float anchoPantalla = 800;
-        float anchoGota = 64;
-        float spawnXBase = MathUtils.random(0, anchoPantalla - anchoGota);
-        float spawnXFinal = spawnXBase - derivaHorizontal;
-
-        // 6. Crear el Objeto
-        Rectangle hitbox = new Rectangle();
-        hitbox.x = spawnXFinal;
-        hitbox.y = altoPantalla;
-        hitbox.width = anchoGota;
-        hitbox.height = 64;
-
-        ObjetoQueCae nuevoObjeto;
-
-        if (esPowerup) {
-            nuevoObjeto = new VidaExtra(texVidaExtra, hitbox, movimiento, sndVida);
-        } else {
-            if (chance < 0.70f) { // 70% Gota Buena
-                nuevoObjeto = new GotaBuena(texGotaBuena, hitbox, movimiento, sndDrop);
-            } else { // 29% Gota Mala
-                nuevoObjeto = new GotaMala(texGotaMala, hitbox, movimiento);
+            if (chance < 0.70f) {
+                // Es Gota Buena (no hacer nada aquí)
+            } else if (chance < 0.97f) {
+                // Es Gota Mala (no hacer nada aquí)
+            } else if (chance < 0.99f) {
+                // Es Vida Extra (2% de chance)
+                esPowerup = true;
+                tipoPowerup = 1; // 1 = Vida
+            } else {
+                // Es un Poder Raro (1% de chance total)
+                esPowerup = true;
+                // Asignar aleatoriamente entre Escudo (2), Imán (3) y Tormenta (4)
+                tipoPowerup = MathUtils.random(2, 4);
             }
+            // --- FIN DE LÓGICA REVISADA ---
+
+            // 4. Pedir al Cerebro la Estrategia
+            IComportamientoMovimiento movimiento;
+            if (esPowerup) {
+                movimiento = gm.getMovimientoParaPowerup();
+            } else {
+                movimiento = gm.getMovimientoParaGota();
+            }
+
+            // 5. Preguntar a la Estrategia
+            float derivaHorizontal = movimiento.getDerivaHorizontal(480, movimiento.getVelocidadVertical());
+            float rotacion = movimiento.getRotacion();
+
+            // 6. Calcular Spawn
+            float spawnXFinal = MathUtils.random(0, 800 - 64) - derivaHorizontal;
+            Rectangle hitbox = new Rectangle(spawnXFinal, 480, 64, 64);
+
+            // 7. Crear el Objeto
+            ObjetoQueCae nuevoObjeto;
+
+            if (esPowerup) {
+                switch (tipoPowerup) {
+                    case 1:
+                        nuevoObjeto = new VidaExtra(texVidaExtra, hitbox, movimiento, sndVida);
+                        break;
+                    case 2:
+                        nuevoObjeto = new PowerUpEscudo(texEscudo, hitbox, movimiento, sndPowerup);
+                        break;
+                    case 3:
+                        nuevoObjeto = new PowerUpIman(texIman, hitbox, movimiento, sndPowerup);
+                        break;
+                    case 4:
+                        nuevoObjeto = new PowerUpTormenta(texTormenta, hitbox, movimiento, sndPowerup);
+                        break;
+                    default:
+                        // Fallback a Gota Buena
+                        nuevoObjeto = new GotaBuena(texGotaBuena, hitbox, movimiento, sndDrop);
+                }
+            } else {
+                // Gota Buena vs Gota Mala
+                if (chance < 0.70f) { // 70% Gota Buena
+                    nuevoObjeto = new GotaBuena(texGotaBuena, hitbox, movimiento, sndDrop);
+                } else { // Gota Mala
+                    nuevoObjeto = new GotaMala(texGotaMala, hitbox, movimiento);
+                }
+            }
+
+            nuevoObjeto.setRotacion(rotacion);
+            objetosEnPantalla.add(nuevoObjeto);
         }
 
-        nuevoObjeto.setRotacion(rotacion); // Aplicar rotación inicial
-        objetosEnPantalla.add(nuevoObjeto);
         lastDropTime = TimeUtils.nanoTime();
     }
 
     // Actualiza todos los objetos
     public void actualizarMovimiento(Tarro tarro) {
-        if (TimeUtils.nanoTime() - lastDropTime > 100000000)
+
+        // --- TIMER DE SPAWN MODIFICADO ---
+        long timerSpawnRequerido = (GameManager.getInstance().getEstadoActual() == GameManager.EstadoJuego.TORMENTA_ESPECIAL)
+                ? SPAWN_TIMER_TORMENTA
+                : SPAWN_TIMER_NORMAL;
+
+        if (TimeUtils.nanoTime() - lastDropTime > timerSpawnRequerido)
             crearObjetoQueCae();
 
+        // (Iteración y update de objetos sin cambios)
         for (int i = objetosEnPantalla.size - 1; i >= 0; i--) {
             ObjetoQueCae objeto = objetosEnPantalla.get(i);
-
-            // Llamar al Template Method
             objeto.update(Gdx.graphics.getDeltaTime(), tarro);
 
             if (objeto.marcadoParaEliminar) {

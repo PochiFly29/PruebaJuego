@@ -18,4 +18,9 @@ public class VidaExtra extends ObjetoQueCae {
         GameManager.getInstance().sumarVida();
         lifeSound.play();
     }
+
+    @Override
+    protected boolean esAtraible() {
+        return false;
+    }
 }

@@ -19,16 +19,28 @@ public class GameManager {
     private static final String PREFS_NAME = "GameLluviaPrefs";
     private static final String PREF_HIGHSCORE = "highscore";
 
+    public boolean debeMostrarTrueno() {
+        if (mostrarEfectoTrueno) {
+            mostrarEfectoTrueno = false; // Se consume el flag
+            return true;
+        }
+        return false;
+    }
+
     // --- Máquina de Estados (Patrón State) ---
     public enum EstadoJuego {
         ETAPA_1,
         PAUSA_PARA_ETAPA_2,
         ETAPA_2,
         PAUSA_PARA_ETAPA_3,
-        ETAPA_3
+        ETAPA_3,
+        TORMENTA_ESPECIAL,
+        PAUSA_POST_TORMENTA
     }
     private EstadoJuego estadoActual = EstadoJuego.ETAPA_1;
+    private EstadoJuego estadoPrevio;
     private float timerEstado = 0f;
+    private boolean mostrarEfectoTrueno = false;
 
     // --- Lógica de Juego ---
     private final int SCORE_PARA_ETAPA_2 = 1000;
@@ -37,6 +49,18 @@ public class GameManager {
     private final float DURACION_VIENTO = 5.0f;
     private boolean vientoALaDerecha = true;
 
+    // Estados de Power-Ups ---
+    private boolean escudoActivo = false;
+    private float timerEscudo = 0f;
+    private boolean imanActivo = false;
+    private float timerIman = 0f;
+
+    // Lógica de Súper Tormenta ---
+    private int contadorTormenta = 0;
+    private final int MAX_TORMENTA_CARGA = 3; // Necesitas 3 para activar
+    private final float DURACION_TORMENTA = 5.0f; // 5s de súper lluvia
+    private final float DURACION_PAUSA_POST_TORMENTA = 2.0f;
+
     // --- Estrategias Pre-cacheadas ---
     private IComportamientoMovimiento movRecto_Lento = new MovimientoRecto(200f);
     private IComportamientoMovimiento movRecto_Normal = new MovimientoRecto(300f);
@@ -44,6 +68,7 @@ public class GameManager {
     private IComportamientoMovimiento movDiag_Derecha = new MovimientoDiagonal(300f, 100f, 25f);
     private IComportamientoMovimiento movDiag_Izquierda = new MovimientoDiagonal(300f, -100f, -25f);
     private IComportamientoMovimiento movSerpiente = new MovimientoSerpenteante(300f, 50f, 3f);
+    private IComportamientoMovimiento movTormenta = new MovimientoRecto(700f);
 
     // --- Constructor y Singleton ---
     private GameManager() {
@@ -63,6 +88,11 @@ public class GameManager {
         this.puntos = 0;
         this.estadoActual = EstadoJuego.ETAPA_1;
         this.timerEstado = 0f;
+        this.contadorTormenta = 0;
+        this.escudoActivo = false;
+        this.imanActivo = false;
+        this.timerEscudo = 0f;
+        this.timerIman = 0f;
     }
 
     /**
@@ -71,8 +101,25 @@ public class GameManager {
      */
     public void update(float delta) {
 
+        // Actualizar timer de estado
         if (timerEstado > 0) {
             timerEstado -= delta;
+        }
+
+        // Actualizar timer de escudo
+        if (escudoActivo) {
+            timerEscudo -= delta;
+            if (timerEscudo <= 0) {
+                escudoActivo = false;
+            }
+        }
+
+        // Actualizar timer de imán
+        if (imanActivo) {
+            timerIman -= delta;
+            if (timerIman <= 0) {
+                imanActivo = false;
+            }
         }
 
         switch (estadoActual) {
@@ -80,6 +127,7 @@ public class GameManager {
                 if (puntos >= SCORE_PARA_ETAPA_2) {
                     estadoActual = EstadoJuego.PAUSA_PARA_ETAPA_2;
                     timerEstado = DURACION_PAUSA;
+                    mostrarEfectoTrueno = true; // ¡Se activa el flag!
                 }
                 break;
 
@@ -93,6 +141,7 @@ public class GameManager {
                 if (puntos >= SCORE_PARA_ETAPA_3) {
                     estadoActual = EstadoJuego.PAUSA_PARA_ETAPA_3;
                     timerEstado = DURACION_PAUSA;
+                    mostrarEfectoTrueno = true; // ¡Se activa el flag!
                 }
                 break;
 
@@ -110,17 +159,43 @@ public class GameManager {
                     timerEstado = DURACION_VIENTO;
                 }
                 break;
+            case TORMENTA_ESPECIAL:
+                if (timerEstado <= 0) {
+                    estadoActual = EstadoJuego.PAUSA_POST_TORMENTA;
+                    timerEstado = DURACION_PAUSA_POST_TORMENTA;
+                }
+                break;
+            case PAUSA_POST_TORMENTA:
+                if (timerEstado <= 0) {
+                    // Regresar al estado guardado
+                    estadoActual = estadoPrevio;
+                    // Reiniciar el timer de viento si volvemos a Etapa 3
+                    if(estadoActual == EstadoJuego.ETAPA_3) {
+                        timerEstado = DURACION_VIENTO;
+                    }
+                }
+                break;
         }
     }
 
     // --- Métodos de consulta para la Fábrica (Lluvia) ---
 
+    public EstadoJuego getEstadoActual() {
+        return estadoActual;
+    }
+
     public boolean estaEnPausa() {
         return estadoActual == EstadoJuego.PAUSA_PARA_ETAPA_2 ||
-                estadoActual == EstadoJuego.PAUSA_PARA_ETAPA_3;
+                estadoActual == EstadoJuego.PAUSA_PARA_ETAPA_3 ||
+                estadoActual == EstadoJuego.PAUSA_POST_TORMENTA;
     }
 
     public IComportamientoMovimiento getMovimientoParaGota() {
+        // Chequeo especial para tormenta
+        if (estadoActual == EstadoJuego.TORMENTA_ESPECIAL) {
+            return movTormenta;
+        }
+
         switch (estadoActual) {
             case ETAPA_1:
             case PAUSA_PARA_ETAPA_2:
@@ -146,6 +221,7 @@ public class GameManager {
             case ETAPA_3:
                 return movSerpiente;
             default:
+                // Los power-ups no caen durante la tormenta
                 return movRecto_Lento;
         }
     }
@@ -175,6 +251,52 @@ public class GameManager {
         }
     }
 
+    // Métodos para Power-Ups ---
+
+    public void activarEscudo(float duracion) {
+        this.escudoActivo = true;
+        this.timerEscudo = duracion;
+    }
+
+    public boolean isEscudoActivo() {
+        return escudoActivo;
+    }
+
+    public void consumirEscudo() {
+        this.escudoActivo = false;
+        this.timerEscudo = 0;
+    }
+
+    public void activarIman(float duracion) {
+        this.imanActivo = true;
+        this.timerIman = duracion;
+    }
+
+    public boolean isImanActivo() {
+        return imanActivo;
+    }
+
+    public void incrementarContadorTormenta() {
+        // No sumar si ya está en una tormenta
+        if (estadoActual == EstadoJuego.TORMENTA_ESPECIAL ||
+                estadoActual == EstadoJuego.PAUSA_POST_TORMENTA) return;
+
+        this.contadorTormenta++;
+        if (this.contadorTormenta >= MAX_TORMENTA_CARGA) {
+            this.contadorTormenta = 0;
+            // Guardar estado actual para volver
+            this.estadoPrevio = this.estadoActual;
+            // Activar la tormenta
+            this.estadoActual = EstadoJuego.TORMENTA_ESPECIAL;
+            this.timerEstado = DURACION_TORMENTA;
+        }
+    }
+
+    public boolean estaEnPausaDeTransicion() {
+        return estadoActual == EstadoJuego.PAUSA_PARA_ETAPA_2 ||
+                estadoActual == EstadoJuego.PAUSA_PARA_ETAPA_3;
+    }
+
     // --- Getters para la UI ---
 
     public int getVidas() {
@@ -187,5 +309,9 @@ public class GameManager {
 
     public int getHighscore() {
         return highscore;
+    }
+
+    public int getContadorTormenta() {
+        return contadorTormenta;
     }
 }

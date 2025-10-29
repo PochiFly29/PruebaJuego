@@ -3,6 +3,7 @@ package com.mygdx.game;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 
 // Clase Abstracta (Patrón Template Method)
 public abstract class ObjetoQueCae {
@@ -17,6 +18,9 @@ public abstract class ObjetoQueCae {
     protected float spawnX; // Posición X inicial
     protected float tiempoEnVida = 0f; // Contador de tiempo
 
+    private final float VELOCIDAD_IMAN = 400f;
+    private final float DISTANCIA_IMAN_MAX = 200f;
+
     public ObjetoQueCae(Texture textura, Rectangle hitbox, IComportamientoMovimiento movimiento) {
         this.textura = textura;
         this.hitbox = hitbox;
@@ -30,13 +34,37 @@ public abstract class ObjetoQueCae {
      */
     public final void update(float delta, Tarro tarro) {
 
-        // 1. Mover (solo si el tarro no está herido)
+        // 1. Mover
         if (!tarro.estaHerido()) {
-            this.tiempoEnVida += delta; // Actualizar contador de tiempo
-            miMovimiento.mover(this, delta);
+            this.tiempoEnVida += delta;
+
+            // --- ¡LÓGICA DE IMÁN! ---
+            boolean imanActivo = GameManager.getInstance().isImanActivo();
+
+            if (imanActivo && this.esAtraible()) {
+                // Calcular posiciones
+                Vector2 posTarro = new Vector2(tarro.getArea().x + tarro.getArea().width / 2, tarro.getArea().y);
+                Vector2 posGota = new Vector2(hitbox.x + hitbox.width / 2, hitbox.y);
+
+                float distancia = posTarro.dst(posGota);
+
+                if (distancia < DISTANCIA_IMAN_MAX) {
+                    // Moverse hacia el tarro (lógica de atracción)
+                    Vector2 direccion = posTarro.sub(posGota).nor(); // Normalizar vector
+                    hitbox.x += direccion.x * VELOCIDAD_IMAN * delta;
+                    hitbox.y += direccion.y * VELOCIDAD_IMAN * delta;
+                } else {
+                    // Si está fuera del radio, se mueve normal
+                    miMovimiento.mover(this, delta);
+                }
+
+            } else {
+                // Movimiento normal (Strategy) si el imán no está activo
+                miMovimiento.mover(this, delta);
+            }
         }
 
-        // 2. Chequear Colisión con el tarro
+        // 2. Chequear Colisión
         if (hitbox.overlaps(tarro.getArea())) {
             this.aplicarEfecto(tarro);
             this.marcadoParaEliminar = true;
@@ -53,6 +81,10 @@ public abstract class ObjetoQueCae {
      * Las subclases deben implementar qué pasa al chocar.
      */
     protected abstract void aplicarEfecto(Tarro tarro);
+
+    protected boolean esAtraible() {
+        return false; // Por defecto, no son atraídas
+    }
 
     /**
      * Dibuja el objeto con su rotación.

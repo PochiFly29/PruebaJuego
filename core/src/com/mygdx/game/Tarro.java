@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 
+
 public class Tarro {
     private Rectangle bucket;
     private Texture bucketImage;
@@ -17,9 +18,15 @@ public class Tarro {
     private int tiempoHeridoMax = 50;
     private int tiempoHerido;
 
+    private Texture escudoImage;
+
     public Tarro(Texture tex, Sound ss) {
         bucketImage = tex;
         sonidoHerido = ss;
+    }
+
+    public void setEscudoTexture(Texture tex) {
+        this.escudoImage = tex;
     }
 
     public Rectangle getArea() {
@@ -50,6 +57,11 @@ public class Tarro {
             tiempoHerido--;
             if (tiempoHerido <= 0)
                 herido = false;
+        }
+        // Dibujar el escudo encima si está activo todo
+        if (GameManager.getInstance().isEscudoActivo() && escudoImage != null) {
+            // Dibujar centrado en el tarro, quizás un poco más grande
+            batch.draw(escudoImage, bucket.x - 8, bucket.y - 8, 80, 80);
         }
     }
 

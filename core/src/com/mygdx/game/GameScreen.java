@@ -23,9 +23,17 @@ public class GameScreen implements Screen {
     private Texture texGotaBuena;
     private Texture texGotaMala;
     private Texture texVidaExtra;
+    private Texture texEscudo;
+    private Texture texIman;
+    private Texture texTormenta;
+    private Texture texTrueno; // Asset del trueno
+
     private Sound sndHurt;
     private Sound sndDrop;
     private Sound sndVida;
+    private Sound sndPowerup;
+    private Sound sndTrueno; // Asset del trueno
+
     private Music rainMusic;
 
     public GameScreen(final GameLluviaMenu game) {
@@ -38,24 +46,33 @@ public class GameScreen implements Screen {
         texGotaBuena = new Texture(Gdx.files.internal("drop.png"));
         texGotaMala = new Texture(Gdx.files.internal("dropBad.png"));
         texVidaExtra = new Texture(Gdx.files.internal("vidaExtra.png"));
+        texEscudo = new Texture(Gdx.files.internal("shield.png"));
+        texIman = new Texture(Gdx.files.internal("magnet.png"));
+        texTormenta = new Texture(Gdx.files.internal("storm_pickup.png"));
+
+        // ¡REVISA ESTAS DOS LÍNEAS!
+        texTrueno = new Texture(Gdx.files.internal("trueno.png"));
+        sndTrueno = Gdx.audio.newSound(Gdx.files.internal("trueno.wav"));
 
         sndHurt = Gdx.audio.newSound(Gdx.files.internal("hurt.ogg"));
         sndDrop = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
         sndVida = Gdx.audio.newSound(Gdx.files.internal("life.wav"));
+        sndPowerup = Gdx.audio.newSound(Gdx.files.internal("powerup.wav"));
 
         rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
 
         // --- Creación de Objetos ---
         tarro = new Tarro(texTarro, sndHurt);
+        tarro.setEscudoTexture(texEscudo);
 
-        lluvia = new Lluvia(texGotaBuena, texGotaMala, texVidaExtra, sndDrop, sndVida, rainMusic);
+        lluvia = new Lluvia(texGotaBuena, texGotaMala, texVidaExtra,
+                texEscudo, texIman, texTormenta,
+                sndDrop, sndVida, sndPowerup, rainMusic);
 
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 800, 480);
 
-        // Resetear el estado del juego
         GameManager.getInstance().resetJuego();
-
         tarro.crear();
         lluvia.crear();
     }
@@ -63,8 +80,13 @@ public class GameScreen implements Screen {
     @Override
     public void render(float delta) {
 
-        // Actualizar el "Cerebro" (Maneja timers y estados)
+        // Actualizar el "Cerebro"
         GameManager.getInstance().update(delta);
+
+        // 1. Tocar el SONIDO del trueno (se dispara una vez)
+        if (GameManager.getInstance().debeMostrarTrueno()) {
+            sndTrueno.play();
+        }
 
         ScreenUtils.clear(0, 0, 0.2f, 1);
         camera.update();
@@ -72,27 +94,39 @@ public class GameScreen implements Screen {
 
         batch.begin();
 
-        // --- Dibujar UI (Leyendo desde GameManager) ---
-        font.draw(batch, "Gotas totales: " + GameManager.getInstance().getPuntos(), 5, 475);
-        font.draw(batch, "Vidas : " + GameManager.getInstance().getVidas(), 670, 475);
-        font.draw(batch, "HighScore : " + GameManager.getInstance().getHighscore(), camera.viewportWidth / 2 - 50, 475);
+        // --- DIBUJAR UI (NUEVO LAYOUT) ---
 
+        // Fila Superior
+        font.draw(batch, "HighScore : " + GameManager.getInstance().getHighscore(), 5, 475);
+        font.draw(batch, "Tormenta: " + GameManager.getInstance().getContadorTormenta() + " / 3", 600, 475);
+
+        // Fila Inferior (Y=40, justo encima del tarro en Y=20)
+        font.draw(batch, "Gotas totales: " + GameManager.getInstance().getPuntos(), 5, 40);
+        font.draw(batch, "Vidas : " + GameManager.getInstance().getVidas(), 670, 40);
+
+
+        // --- Lógica del Juego ---
         if (!tarro.estaHerido()) {
             tarro.actualizarMovimiento();
         }
-
-        // Actualizar la lógica de la lluvia (Fábrica)
         lluvia.actualizarMovimiento(tarro);
 
-        // --- Chequeo de Game Over (Leyendo desde GameManager) ---
         if (GameManager.getInstance().getVidas() <= 0) {
             GameManager.getInstance().actualizarHighscore();
             game.setScreen(new GameOverScreen(game));
             dispose();
         }
 
+        // --- Dibujar Objetos del Juego ---
         tarro.dibujar(batch);
         lluvia.actualizarDibujoLluvia(batch);
+
+        // 2. DIBUJAR LA IMAGEN del trueno (mientras dure la pausa)
+        if (GameManager.getInstance().estaEnPausaDeTransicion()) {
+            batch.draw(texTrueno,
+                    camera.viewportWidth / 2 - texTrueno.getWidth() / 2,
+                    camera.viewportHeight / 2 - texTrueno.getHeight() / 2);
+        }
 
         batch.end();
     }
@@ -113,14 +147,22 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
-        // Disponer de TODOS los assets cargados
+        // Disponer de TODOS los assets
         texTarro.dispose();
         texGotaBuena.dispose();
         texGotaMala.dispose();
         texVidaExtra.dispose();
+        texEscudo.dispose();
+        texIman.dispose();
+        texTormenta.dispose();
+        texTrueno.dispose(); // ¡No olvidar!
+
         sndHurt.dispose();
         sndDrop.dispose();
         sndVida.dispose();
-        lluvia.destruir(); // Dispone de rainMusic
+        sndPowerup.dispose();
+        sndTrueno.dispose(); // ¡No olvidar!
+
+        lluvia.destruir();
     }
 }
