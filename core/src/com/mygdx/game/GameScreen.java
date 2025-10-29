@@ -48,7 +48,6 @@ public class GameScreen implements Screen {
         // --- Creación de Objetos ---
         tarro = new Tarro(texTarro, sndHurt);
 
-        // Inyectar assets en el controlador de Lluvia
         lluvia = new Lluvia(texGotaBuena, texGotaMala, texVidaExtra, sndDrop, sndVida, rainMusic);
 
         camera = new OrthographicCamera();
@@ -63,6 +62,10 @@ public class GameScreen implements Screen {
 
     @Override
     public void render(float delta) {
+
+        // Actualizar el "Cerebro" (Maneja timers y estados)
+        GameManager.getInstance().update(delta);
+
         ScreenUtils.clear(0, 0, 0.2f, 1);
         camera.update();
         batch.setProjectionMatrix(camera.combined);
@@ -78,20 +81,16 @@ public class GameScreen implements Screen {
             tarro.actualizarMovimiento();
         }
 
-        // Actualizar la lógica de la lluvia
+        // Actualizar la lógica de la lluvia (Fábrica)
         lluvia.actualizarMovimiento(tarro);
 
         // --- Chequeo de Game Over (Leyendo desde GameManager) ---
         if (GameManager.getInstance().getVidas() <= 0) {
-            // Actualizar HighScore
             GameManager.getInstance().actualizarHighscore();
-
-            // Ir a la ventana de fin de juego
             game.setScreen(new GameOverScreen(game));
             dispose();
         }
 
-        // Dibujar los elementos del juego
         tarro.dibujar(batch);
         lluvia.actualizarDibujoLluvia(batch);
 
@@ -112,10 +111,9 @@ public class GameScreen implements Screen {
     @Override
     public void resume() {}
 
-
     @Override
     public void dispose() {
-        // Disponer de TODOS los assets cargados en esta pantalla
+        // Disponer de TODOS los assets cargados
         texTarro.dispose();
         texGotaBuena.dispose();
         texGotaMala.dispose();

@@ -4,35 +4,35 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
 
-// Clase Abstracta con el Patrón Template Method
+// Clase Abstracta (Patrón Template Method)
 public abstract class ObjetoQueCae {
 
-    protected Rectangle hitbox;     // Hitbox y posición
-    protected Texture textura;      // Imagen
-    protected float rotacion = 0f;       // Ángulo de rotación
-
-    // Atributo para el Patrón Strategy
+    protected Rectangle hitbox;
+    protected Texture textura;
     protected IComportamientoMovimiento miMovimiento;
-
-    // Flag para que GameScreen sepa cuándo eliminarlo
+    protected float rotacion = 0f;
     public boolean marcadoParaEliminar = false;
+
+    // Variables para cálculos de movimiento
+    protected float spawnX; // Posición X inicial
+    protected float tiempoEnVida = 0f; // Contador de tiempo
 
     public ObjetoQueCae(Texture textura, Rectangle hitbox, IComportamientoMovimiento movimiento) {
         this.textura = textura;
         this.hitbox = hitbox;
         this.miMovimiento = movimiento;
+        this.spawnX = hitbox.x; // Guardar la X inicial
     }
 
     /**
      * MÉTODO PLANTILLA (Template Method).
-     * Es 'final' para que las subclases no puedan alterarlo.
      * Define el algoritmo base: mover, chequear colisión, chequear límites.
      */
     public final void update(float delta, Tarro tarro) {
 
-        // 1. Mover (¡MODIFICADO!)
-        // Solo se mueve si el tarro NO está herido
+        // 1. Mover (solo si el tarro no está herido)
         if (!tarro.estaHerido()) {
+            this.tiempoEnVida += delta; // Actualizar contador de tiempo
             miMovimiento.mover(this, delta);
         }
 
@@ -48,36 +48,49 @@ public abstract class ObjetoQueCae {
         }
     }
 
+    /**
+     * PASO ABSTRACTO (Hook).
+     * Las subclases deben implementar qué pasa al chocar.
+     */
     protected abstract void aplicarEfecto(Tarro tarro);
 
+    /**
+     * Dibuja el objeto con su rotación.
+     */
     public void dibujar(SpriteBatch batch) {
-        // Ya no usamos el batch.draw() simple
-        // batch.draw(textura, hitbox.x, hitbox.y, hitbox.width, hitbox.height);
-
-        // Usamos el batch.draw() completo que permite rotación
         batch.draw(textura,
                 hitbox.x,
                 hitbox.y,
-                hitbox.width / 2,    // originX (centro del sprite)
-                hitbox.height / 2,   // originY (centro del sprite)
+                hitbox.width / 2,    // originX
+                hitbox.height / 2,   // originY
                 hitbox.width,
                 hitbox.height,
                 1.0f,                  // scaleX
                 1.0f,                  // scaleY
-                rotacion,              // ¡Aquí usamos la rotación!
-                0,                     // srcX (región de la textura)
-                0,                     // srcY (región de la textura)
+                rotacion,              // rotación
+                0,                     // srcX
+                0,                     // srcY
                 textura.getWidth(),    // srcWidth
                 textura.getHeight(),   // srcHeight
                 false,                 // flipX
                 false);                // flipY
     }
 
+    // --- Getters y Setters ---
+
+    public void setRotacion(float rotacion) {
+        this.rotacion = rotacion;
+    }
+
     public void setComportamiento(IComportamientoMovimiento nuevoComportamiento) {
         this.miMovimiento = nuevoComportamiento;
     }
 
-    public void setRotacion(float rotacion) {
-        this.rotacion = rotacion;
+    public float getSpawnX() {
+        return spawnX;
+    }
+
+    public float getTiempoEnVida() {
+        return tiempoEnVida;
     }
 }

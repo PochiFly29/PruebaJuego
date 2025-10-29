@@ -2,7 +2,7 @@ package com.mygdx.game;
 
 import com.badlogic.gdx.Gdx;
 
-// Implementación concreta del patrón Strategy
+// Implementación de Strategy: Caída recta
 public class MovimientoRecto implements IComportamientoMovimiento {
 
     private float velocidadBase;
@@ -13,7 +13,23 @@ public class MovimientoRecto implements IComportamientoMovimiento {
 
     @Override
     public void mover(ObjetoQueCae objeto, float delta) {
-        // Lógica de movimiento de caída recta
         objeto.hitbox.y -= velocidadBase * delta;
+    }
+
+    @Override
+    public float getDerivaHorizontal(float fallHeight, float fallSpeed) {
+        // No tiene deriva horizontal
+        return 0f;
+    }
+
+    @Override
+    public float getRotacion() {
+        // No tiene rotación
+        return 0f;
+    }
+
+    @Override
+    public float getVelocidadVertical() {
+        return this.velocidadBase;
     }
 }
