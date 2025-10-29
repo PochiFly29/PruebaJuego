@@ -3,8 +3,10 @@ package com.mygdx.game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 public class GameOverScreen implements Screen {
@@ -19,7 +21,14 @@ public class GameOverScreen implements Screen {
         this.font = game.getFont();
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, 800, 480);
-	}
+        FreeTypeFontGenerator gen = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Roboto.ttf"));
+        FreeTypeFontGenerator.FreeTypeFontParameter p = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        p.size = 28;
+        p.minFilter = Texture.TextureFilter.Linear;
+        p.magFilter = Texture.TextureFilter.Linear;
+        this.font = gen.generateFont(p);
+        gen.dispose();
+    }
 
 	@Override
 	public void render(float delta) {
@@ -30,6 +39,7 @@ public class GameOverScreen implements Screen {
 		batch.begin();
 		font.draw(batch, "GAME OVER ", 100, 200);
 		font.draw(batch, "Toca en cualquier lado para reiniciar.", 100, 100);
+
 		batch.end();
 
 		if (Gdx.input.isTouched()) {

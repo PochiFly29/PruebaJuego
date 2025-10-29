@@ -1,4 +1,6 @@
-package com.mygdx.game;
+package com.mygdx.game.imovimiento;
+
+import com.mygdx.game.Objeto;
 
 public interface MovimientoStrat {
     void mover(Objeto obj, float dt);

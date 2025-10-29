@@ -7,7 +7,12 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.TimeUtils;
+import com.mygdx.game.iescenario.EscenarioNormal;
+import com.mygdx.game.iescenario.EscenarioStrat;
+import com.mygdx.game.iescenario.EscenarioTorrencial;
+import com.mygdx.game.imovimiento.CaidaDiagonal;
+import com.mygdx.game.imovimiento.CaidaVertical;
+import com.mygdx.game.imovimiento.MovimientoStrat;
 
 public class Lluvia {
 

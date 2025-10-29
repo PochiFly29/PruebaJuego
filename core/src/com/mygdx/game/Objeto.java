@@ -3,6 +3,7 @@ package com.mygdx.game;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
+import com.mygdx.game.imovimiento.MovimientoStrat;
 
 public abstract class Objeto {
     protected Rectangle area;
@@ -21,7 +22,7 @@ public abstract class Objeto {
         this.area.height = 64;
     }
 
-    public void setMovimiento(com.mygdx.game.MovimientoStrat m) {
+    public void setMovimiento(MovimientoStrat m) {
         this.movimiento = m;
         if (this.movimiento != null) this.movimiento.initApariencia(this);
     }

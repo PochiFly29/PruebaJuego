@@ -1,6 +1,8 @@
-package com.mygdx.game;
+package com.mygdx.game.iescenario;
 
 import com.badlogic.gdx.utils.TimeUtils;
+import com.mygdx.game.Lluvia;
+import com.mygdx.game.Tarro;
 
 public class EscenarioNormal implements EscenarioStrat {
     private static final long INTERVALO = 100_000_000L;

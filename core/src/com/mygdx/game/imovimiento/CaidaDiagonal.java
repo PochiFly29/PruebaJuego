@@ -1,6 +1,7 @@
-package com.mygdx.game;
+package com.mygdx.game.imovimiento;
 
 import com.badlogic.gdx.audio.Music;
+import com.mygdx.game.Objeto;
 
 public class CaidaDiagonal implements MovimientoStrat {
     private final float velY;

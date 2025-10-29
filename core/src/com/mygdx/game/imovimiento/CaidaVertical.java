@@ -1,4 +1,6 @@
-package com.mygdx.game;
+package com.mygdx.game.imovimiento;
+
+import com.mygdx.game.Objeto;
 
 public class CaidaVertical implements MovimientoStrat {
     private float velY = 300f;
