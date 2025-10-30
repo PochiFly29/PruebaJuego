@@ -8,11 +8,13 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
+import com.mygdx.game.iescenario.EscenarioStrat;
+import com.mygdx.game.iescenario.EscenarioNormal;
+import com.mygdx.game.iescenario.EscenarioTorrencial;
+import com.mygdx.game.imovimiento.IComportamientoMovimiento;
 
 import java.util.EnumMap;
 import java.util.Map;
-
-import com.mygdx.game.imovimiento.IComportamientoMovimiento;
 
 public class Lluvia {
 
@@ -29,11 +31,8 @@ public class Lluvia {
     private final com.badlogic.gdx.audio.Sound sndDrop, sndVida, sndPowerup;
     private final Music rainMusic;
 
-    private int   ancho = 64, alto = 64;
+    private int ancho = 64, alto = 64;
     private float pantallaAncho = 800f, pantallaAlto = 480f;
-
-    private long spawnNormalNs = 100_000_000L;   // 0.10s
-    private long spawnTormentaNs = 30_000_000L;  // 0.03s
 
     private float pBuena = 0.70f;
     private float pMala  = 0.27f;
@@ -46,17 +45,20 @@ public class Lluvia {
 
     private final Map<TipoSpawn, Fabrica> fabrica = new EnumMap<TipoSpawn, Fabrica>(TipoSpawn.class);
 
+    private EscenarioStrat escenario;
+
     public Lluvia(Texture gotaBuena, Texture gotaMala, Texture vidaExtra,
-                  Texture texEscudo, Texture texIman, Texture texTormenta,
-                  com.badlogic.gdx.audio.Sound dropSound, com.badlogic.gdx.audio.Sound lifeSound, com.badlogic.gdx.audio.Sound powerupSound,
-                  Music rainMusic) {
+                  Texture escudo, Texture iman, Texture tormenta,
+                  com.badlogic.gdx.audio.Sound dropSound, com.badlogic.gdx.audio.Sound lifeSound,
+                  com.badlogic.gdx.audio.Sound powerupSound, Music rainMusic) {
 
         this.texBuena = gotaBuena;
         this.texMala = gotaMala;
         this.texVida = vidaExtra;
-        this.texEscudo = texEscudo;
-        this.texIman = texIman;
-        this.texTormenta = texTormenta;
+        this.texEscudo = escudo;
+        this.texIman = iman;
+        this.texTormenta = tormenta;
+
         this.sndDrop = dropSound;
         this.sndVida = lifeSound;
         this.sndPowerup = powerupSound;
@@ -64,39 +66,38 @@ public class Lluvia {
 
         fabrica.put(TipoSpawn.BUENA, new Fabrica() {
             public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
-                return new GotaBuena(Lluvia.this.texBuena, hb, mov, Lluvia.this.sndDrop);
+                return new GotaBuena(texBuena, hb, mov, sndDrop);
             }
         });
         fabrica.put(TipoSpawn.MALA, new Fabrica() {
             public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
-                return new GotaMala(Lluvia.this.texMala, hb, mov);
+                return new GotaMala(texMala, hb, mov);
             }
         });
         fabrica.put(TipoSpawn.VIDA, new Fabrica() {
             public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
-                return new VidaExtra(Lluvia.this.texVida, hb, mov, Lluvia.this.sndVida);
+                return new VidaExtra(texVida, hb, mov, sndVida);
             }
         });
         fabrica.put(TipoSpawn.ESCUDO, new Fabrica() {
             public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
-                return new PowerUpEscudo(Lluvia.this.texEscudo, hb, mov, Lluvia.this.sndPowerup);
+                return new PowerUpEscudo(texEscudo, hb, mov, sndPowerup);
             }
         });
         fabrica.put(TipoSpawn.IMAN, new Fabrica() {
             public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
-                return new PowerUpIman(Lluvia.this.texIman, hb, mov, Lluvia.this.sndPowerup);
+                return new PowerUpIman(texIman, hb, mov, sndPowerup);
             }
         });
         fabrica.put(TipoSpawn.TORMENTA, new Fabrica() {
             public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
-                return new PowerUpTormenta(Lluvia.this.texTormenta, hb, mov, Lluvia.this.sndPowerup);
+                return new PowerUpTormenta(texTormenta, hb, mov, sndPowerup);
             }
         });
     }
 
     public Lluvia setTamañoHitbox(int ancho, int alto) { this.ancho = ancho; this.alto = alto; return this; }
     public Lluvia setDimensionesPantalla(float w, float h) { this.pantallaAncho = w; this.pantallaAlto = h; return this; }
-    public Lluvia setTimers(long normalNs, long tormentaNs) { this.spawnNormalNs = normalNs; this.spawnTormentaNs = tormentaNs; return this; }
     public Lluvia setProbabilidades(float pBuena, float pMala, float pVida, float pRaras) {
         this.pBuena = pBuena; this.pMala = pMala; this.pVida = pVida; this.pRaras = pRaras; return this;
     }
@@ -105,9 +106,15 @@ public class Lluvia {
     }
     public void setSoloBuenas(boolean soloBuenas) { this.soloBuenas = soloBuenas; }
 
+    public void setEscenario(EscenarioStrat esc) {
+        this.escenario = esc;
+        if (this.escenario != null) this.escenario.init(this);
+    }
+
     public void crear() {
         objetos.clear();
         lastDropTime = TimeUtils.nanoTime();
+        if (escenario == null) setEscenario(new EscenarioNormal());
         rainMusic.setLooping(true);
         rainMusic.play();
     }
@@ -115,17 +122,19 @@ public class Lluvia {
     public void actualizarMovimiento(Tarro tarro) {
         GameManager gm = GameManager.getInstance();
 
-        long spawnTarget = (gm.getEstadoActual() == GameManager.EstadoJuego.TORMENTA_ESPECIAL)
-                ? spawnTormentaNs : spawnNormalNs;
-
-        if (TimeUtils.nanoTime() - lastDropTime > spawnTarget) {
-            crearObjeto(gm);
-            lastDropTime = TimeUtils.nanoTime();
+        boolean enTormenta = (gm.getEstadoActual() == GameManager.EstadoJuego.TORMENTA_ESPECIAL);
+        if (enTormenta && !(escenario instanceof EscenarioTorrencial)) {
+            setEscenario(new EscenarioTorrencial());
+        } else if (!enTormenta && (escenario instanceof EscenarioTorrencial)) {
+            setEscenario(new EscenarioNormal());
         }
+
+        float dt = Gdx.graphics.getDeltaTime();
+        escenario.update(this, tarro, dt);
 
         for (int i = objetos.size - 1; i >= 0; i--) {
             ObjetoCayendo o = objetos.get(i);
-            o.update(Gdx.graphics.getDeltaTime(), tarro);
+            o.update(dt, tarro);
             if (o.marcadoParaEliminar) objetos.removeIndex(i);
         }
     }
@@ -138,18 +147,37 @@ public class Lluvia {
     public void continuar() { rainMusic.play(); }
     public void destruir()  { rainMusic.dispose(); }
 
-    private void crearObjeto(GameManager gm) {
-        boolean enTormenta = (gm.getEstadoActual() == GameManager.EstadoJuego.TORMENTA_ESPECIAL);
-        TipoSpawn tipo = elegirTipo(enTormenta);
+    public void cambiarEscenarioNormal() { setEscenario(new EscenarioNormal()); }
+
+    public void crearGotaDeLluvia() {
+        GameManager gm = GameManager.getInstance();
+
+        TipoSpawn tipo;
+        if (soloBuenas || gm.getEstadoActual() == GameManager.EstadoJuego.TORMENTA_ESPECIAL) {
+            tipo = TipoSpawn.BUENA;
+        } else {
+            float r = MathUtils.random();
+            float tBuena = pBuena;
+            float tMala  = tBuena + pMala;
+            float tVida  = tMala  + pVida;
+            if (r < tBuena)      tipo = TipoSpawn.BUENA;
+            else if (r < tMala)  tipo = TipoSpawn.MALA;
+            else if (r < tVida)  tipo = TipoSpawn.VIDA;
+            else {
+                float rr = MathUtils.random();
+                float e = pEscudo, i = e + pIman;
+                tipo = (rr < e) ? TipoSpawn.ESCUDO : (rr < i ? TipoSpawn.IMAN : TipoSpawn.TORMENTA);
+            }
+        }
 
         IComportamientoMovimiento base = (tipo == TipoSpawn.BUENA || tipo == TipoSpawn.MALA)
                 ? gm.getMovimientoParaGota()
                 : gm.getMovimientoParaPowerup();
-        IComportamientoMovimiento mov = base.crearNueva();
+        IComportamientoMovimiento mov = base != null ? base.crearNueva() : null;
 
-        float velY = Math.max(1e-6f, mov.getVelocidadVertical());
-        float deriva = mov.getDerivaHorizontal(pantallaAlto, velY);
-        float rot = mov.getRotacion();
+        float velY = (mov != null) ? Math.max(1e-6f, mov.getVelocidadVertical()) : 300f;
+        float deriva = (mov != null) ? mov.getDerivaHorizontal(pantallaAlto, velY) : 0f;
+        float rot = (mov != null) ? mov.getRotacion() : 0f;
 
         float xSpawn = MathUtils.random(0f, Math.max(0f, pantallaAncho - ancho)) - deriva;
         Rectangle hb = new Rectangle(xSpawn, pantallaAlto, ancho, alto);
@@ -159,23 +187,7 @@ public class Lluvia {
         ObjetoCayendo obj = fab.crear(hb, mov);
         obj.setRotacion(rot);
         objetos.add(obj);
-    }
 
-    private TipoSpawn elegirTipo(boolean enTormenta) {
-        if (soloBuenas || enTormenta) return TipoSpawn.BUENA;
-
-        float r = MathUtils.random();
-        float tBuena = pBuena;
-        float tMala  = tBuena + pMala;
-        float tVida  = tMala  + pVida;
-
-        if (r < tBuena)  return TipoSpawn.BUENA;
-        if (r < tMala)   return TipoSpawn.MALA;
-        if (r < tVida)   return TipoSpawn.VIDA;
-
-        float rr = MathUtils.random();
-        float e = pEscudo;
-        float i = e + pIman;
-        return (rr < e) ? TipoSpawn.ESCUDO : (rr < i ? TipoSpawn.IMAN : TipoSpawn.TORMENTA);
+        lastDropTime = TimeUtils.nanoTime();
     }
 }

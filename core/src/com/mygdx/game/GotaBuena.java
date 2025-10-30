@@ -16,7 +16,7 @@ public class GotaBuena extends ObjetoCayendo {
 
     @Override
     protected void alColisionar(Tarro tarro) {
-        GameManager.getInstance().sumarPuntos(1);
+        GameManager.getInstance().sumarPuntos(10);
         if (dropSound != null) dropSound.play();
     }
 
