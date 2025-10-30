@@ -8,6 +8,7 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 public class GameScreen implements Screen {
@@ -17,14 +18,24 @@ public class GameScreen implements Screen {
     private Tarro tarro;
     private Lluvia lluvia;
 
+    // Assets
     private Texture texTarro, texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta, texTrueno;
     private Sound   sndHurt,  sndDrop,      sndVida,      sndPowerup,  sndTrueno;
     private Music   rainMusic, windMusic;
 
     public GameScreen(final GameLluviaMenu game) {
         this.game = game;
-        this.font = game.getFont();
 
+        // === Fuente Roboto ===
+        FreeTypeFontGenerator gen = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Roboto.ttf"));
+        FreeTypeFontGenerator.FreeTypeFontParameter p = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        p.size = 28;
+        p.minFilter = Texture.TextureFilter.Linear;
+        p.magFilter = Texture.TextureFilter.Linear;
+        this.font = gen.generateFont(p);
+        gen.dispose();
+
+        // === Texturas ===
         texTarro     = new Texture(Gdx.files.internal("bucket.png"));
         texGotaBuena = new Texture(Gdx.files.internal("drop.png"));
         texGotaMala  = new Texture(Gdx.files.internal("dropBad.png"));
@@ -34,16 +45,19 @@ public class GameScreen implements Screen {
         texTormenta  = new Texture(Gdx.files.internal("storm_pickup.png"));
         texTrueno    = new Texture(Gdx.files.internal("trueno.png"));
 
+        // Filtro Linear para todas
+        setLinear(texTarro, texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta, texTrueno);
+
+        // === Sonidos/Música ===
         sndHurt     = Gdx.audio.newSound(Gdx.files.internal("hurt.ogg"));
         sndDrop     = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
         sndVida     = Gdx.audio.newSound(Gdx.files.internal("life.wav"));
         sndPowerup  = Gdx.audio.newSound(Gdx.files.internal("powerup.wav"));
         sndTrueno   = Gdx.audio.newSound(Gdx.files.internal("trueno.wav"));
-
         rainMusic   = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
         windMusic   = Gdx.audio.newMusic(Gdx.files.internal("wind.mp3"));
 
-        // Registrar canal "wind" en el bus
+        // Registrar canal "wind" en el AudioBus
         GameManager.getInstance().setWindMusic(windMusic);
 
         tarro = new Tarro(texTarro, sndHurt);
@@ -63,8 +77,15 @@ public class GameScreen implements Screen {
         lluvia.crear();
     }
 
+    private static void setLinear(Texture... textures) {
+        for (Texture t : textures) {
+            t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        }
+    }
+
     @Override
     public void render(float delta) {
+        // Input global
         if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             game.setScreen(new GameScreen(game));
             dispose();
@@ -155,5 +176,7 @@ public class GameScreen implements Screen {
 
         rainMusic.dispose();
         windMusic.dispose();
+
+        if (font != null) font.dispose();
     }
 }
