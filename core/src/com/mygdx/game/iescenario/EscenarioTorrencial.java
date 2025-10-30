@@ -5,12 +5,11 @@ import com.mygdx.game.Lluvia;
 import com.mygdx.game.Tarro;
 
 public class EscenarioTorrencial implements EscenarioStrat {
-    // Spawnea rápido en ráfagas y solo buenas
-    private static final long INTERVALO = 80_000_000L; // 0.08 s
-    private static final int  BURST     = 2;
-    private static final float DURACION = 5f;
+    private static final long  INTERVALO = 30_000_000L; // 0.03s
+    private static final int   BURST     = 3;
+    private static final float DURACION  = 5f;
 
-    private long last;
+    private long  last;
     private float tiempoAcumulado = 0f;
 
     @Override
@@ -24,14 +23,11 @@ public class EscenarioTorrencial implements EscenarioStrat {
     public void update(Lluvia ctx, Tarro tarro, float dt) {
         tiempoAcumulado += dt;
         if (tiempoAcumulado >= DURACION) {
-            ctx.cambiarEscenarioNormal(); // vuelve a normal
+            ctx.cambiarEscenarioNormal();
             return;
         }
-
         if (TimeUtils.nanoTime() - last > INTERVALO) {
-            for (int i = 0; i < BURST; i++) {
-                ctx.crearGotaDeLluvia();
-            }
+            for (int i = 0; i < BURST; i++) ctx.spawnAhoraBuena();
             last = TimeUtils.nanoTime();
         }
     }

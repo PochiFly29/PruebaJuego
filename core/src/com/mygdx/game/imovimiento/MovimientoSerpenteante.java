@@ -8,7 +8,6 @@ public class MovimientoSerpenteante implements IComportamientoMovimiento {
     private final float amplitud;
     private final float frecuencia;
 
-    // estado por instancia
     private float tAccum = 0f;
     private Float spawnX = null;
 

@@ -3,23 +3,43 @@ package com.mygdx.game;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Rectangle;
+import com.mygdx.game.iescenario.EscenarioTorrencial;
 import com.mygdx.game.imovimiento.IComportamientoMovimiento;
 
 public class PowerUpTormenta extends ObjetoCayendo {
 
-    private final Sound powerupSound;
+    private final Sound sfx;
+    private final Lluvia lluvia;
 
-    public PowerUpTormenta(Texture textura, Rectangle hitbox, IComportamientoMovimiento movimiento, Sound sound) {
+    public PowerUpTormenta(Lluvia lluvia, Texture textura, Rectangle hitbox,IComportamientoMovimiento movimiento,Sound sound) {
         super(textura, hitbox, movimiento);
-        this.powerupSound = sound;
+        this.sfx = sound;
+        this.lluvia = lluvia;
+    }
+
+    public PowerUpTormenta(Texture textura,
+                           Rectangle hitbox,
+                           IComportamientoMovimiento movimiento,
+                           Sound sound) {
+        super(textura, hitbox, movimiento);
+        this.sfx = sound;
+        this.lluvia = null;
     }
 
     @Override
     protected void alColisionar(Tarro tarro) {
-        GameManager.getInstance().incrementarContadorTormenta();
-        if (powerupSound != null) powerupSound.play();
+        if (sfx != null) sfx.play();
+
+        GameManager gm = GameManager.getInstance();
+        gm.incrementarContadorTormenta();
+
+        if (gm.getEstadoActual() == GameManager.EstadoJuego.TORMENTA_ESPECIAL && lluvia != null) {
+            lluvia.setEscenario(new EscenarioTorrencial());
+        }
     }
 
     @Override
-    protected boolean esAtraible() { return false; }
+    protected boolean esAtraible() {
+        return false;
+    }
 }

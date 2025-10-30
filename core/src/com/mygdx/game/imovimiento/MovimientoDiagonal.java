@@ -12,14 +12,13 @@ public class MovimientoDiagonal implements IComportamientoMovimiento {
         this.rotDeg = rotDeg;
     }
 
-    @Override
-    public void mover(ObjetoCayendo obj, float dt) {
+    @Override public void mover(ObjetoCayendo obj, float dt) {
         obj.getHitbox().y -= velY * dt;
         obj.getHitbox().x += velX * dt;
+    }
+    @Override public void initApariencia(ObjetoCayendo obj) {
         obj.setRotacion(rotDeg);
     }
-
-    @Override public void initApariencia(ObjetoCayendo obj) { obj.setRotacion(rotDeg); }
 
     @Override public void onStart() { GameManager.getInstance().startWind(); }
     @Override public void onStop()  { GameManager.getInstance().stopWind();  }

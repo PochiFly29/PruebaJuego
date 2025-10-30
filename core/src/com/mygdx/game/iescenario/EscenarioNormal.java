@@ -5,8 +5,7 @@ import com.mygdx.game.Lluvia;
 import com.mygdx.game.Tarro;
 
 public class EscenarioNormal implements EscenarioStrat {
-    // Intervalo por defecto: 0.10 s (ajústalo si quieres)
-    private static final long INTERVALO = 100_000_000L;
+    private static final long INTERVALO = 100_000_000L; // 0.10s
     private long last;
 
     @Override
@@ -18,7 +17,8 @@ public class EscenarioNormal implements EscenarioStrat {
     @Override
     public void update(Lluvia ctx, Tarro tarro, float dt) {
         if (TimeUtils.nanoTime() - last > INTERVALO) {
-            ctx.crearGotaDeLluvia();
+            // Probabilidades “normales” (70/27/2/1) que ya define Lluvia
+            ctx.spawnAhora(ctx.elegirTipoNormal());
             last = TimeUtils.nanoTime();
         }
     }
