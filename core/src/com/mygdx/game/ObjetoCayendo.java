@@ -6,9 +6,6 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.mygdx.game.imovimiento.IComportamientoMovimiento;
 
-/**
- * Clase base para todos los objetos que caen (Template Method).
- */
 public abstract class ObjetoCayendo {
 
     protected Rectangle hitbox;
@@ -17,13 +14,14 @@ public abstract class ObjetoCayendo {
     protected float rotacion = 0f;
     public boolean marcadoParaEliminar = false;
 
-    // Estado interno
     protected float spawnX;
     protected float tiempoEnVida;
 
-    // Parámetros del imán
     private static final float VELOCIDAD_IMAN = 400f;
     private static final float DISTANCIA_IMAN_MAX = 200f;
+
+    private boolean started = false;
+    private boolean stopped = false;
 
     public ObjetoCayendo(Texture textura, Rectangle hitbox, IComportamientoMovimiento movimiento) {
         this.textura = textura;
@@ -39,6 +37,8 @@ public abstract class ObjetoCayendo {
     }
 
     public final void update(float delta, Tarro tarro) {
+        if (movimiento != null && !started) { movimiento.onStart(); started = true; }
+
         if (!tarro.estaHerido()) {
             tiempoEnVida += delta;
             aplicarMovimiento(delta, tarro);
@@ -51,6 +51,11 @@ public abstract class ObjetoCayendo {
 
         if (hitbox.y + hitbox.height < 0) {
             marcadoParaEliminar = true;
+        }
+
+        if (marcadoParaEliminar && movimiento != null && !stopped) {
+            movimiento.onStop();
+            stopped = true;
         }
     }
 
@@ -70,18 +75,15 @@ public abstract class ObjetoCayendo {
                 Vector2 dir = posTarro.sub(posObj).nor();
                 hitbox.x += dir.x * VELOCIDAD_IMAN * delta;
                 hitbox.y += dir.y * VELOCIDAD_IMAN * delta;
-                return; // no aplicar movimiento normal este frame
+                return;
             }
         }
-
         if (movimiento != null) movimiento.mover(this, delta);
     }
 
-    // Hooks
     protected abstract void alColisionar(Tarro tarro);
     protected boolean esAtraible() { return false; }
 
-    // Dibujo / utilitarios
     public void dibujar(SpriteBatch batch) {
         batch.draw(
                 textura,
@@ -97,11 +99,14 @@ public abstract class ObjetoCayendo {
     }
 
     public Rectangle getHitbox() { return hitbox; }
-    public Rectangle getArea()   { return hitbox; } // alias compat
+    public Rectangle getArea() { return hitbox; }
     public void setRotacion(float rotacion) { this.rotacion = rotacion; }
 
     public void setComportamiento(IComportamientoMovimiento movimiento) {
         this.movimiento = movimiento;
         if (movimiento != null) movimiento.initApariencia(this);
     }
+
+    public float getTiempoEnVida() { return tiempoEnVida; }
+    public float getSpawnX() { return spawnX; }
 }

@@ -17,10 +17,9 @@ public class GameScreen implements Screen {
     private Tarro tarro;
     private Lluvia lluvia;
 
-    // Assets
     private Texture texTarro, texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta, texTrueno;
     private Sound   sndHurt,  sndDrop,      sndVida,      sndPowerup,  sndTrueno;
-    private Music   rainMusic;
+    private Music   rainMusic, windMusic;
 
     public GameScreen(final GameLluviaMenu game) {
         this.game = game;
@@ -40,7 +39,12 @@ public class GameScreen implements Screen {
         sndVida     = Gdx.audio.newSound(Gdx.files.internal("life.wav"));
         sndPowerup  = Gdx.audio.newSound(Gdx.files.internal("powerup.wav"));
         sndTrueno   = Gdx.audio.newSound(Gdx.files.internal("trueno.wav"));
+
         rainMusic   = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
+        windMusic   = Gdx.audio.newMusic(Gdx.files.internal("wind.mp3"));
+
+        // Registrar canal "wind" en el bus
+        GameManager.getInstance().setWindMusic(windMusic);
 
         tarro = new Tarro(texTarro, sndHurt);
         tarro.setEscudoTexture(texEscudo);
@@ -61,7 +65,6 @@ public class GameScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        // Input global
         if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             game.setScreen(new GameScreen(game));
             dispose();
@@ -72,37 +75,29 @@ public class GameScreen implements Screen {
             return;
         }
 
-        // --- LÓGICA (antes de dibujar) ---
         GameManager.getInstance().update(delta);
         if (GameManager.getInstance().debeMostrarTrueno()) sndTrueno.play();
 
-        if (!tarro.estaHerido()) {
-            tarro.actualizarMovimiento();
-        }
+        if (!tarro.estaHerido()) tarro.actualizarMovimiento();
         lluvia.actualizarMovimiento(tarro);
 
-        // --- GAME OVER (antes de begin) ---
         if (GameManager.getInstance().getVidas() <= 0) {
             GameManager.getInstance().actualizarHighscore();
-
             try { sndTrueno.stop(); } catch (Exception ignored) {}
             try { rainMusic.stop(); } catch (Exception ignored) {}
+            GameManager.getInstance().getAudioBus().stopAll();
 
-            if (game.getBatch().isDrawing()) { // por si acaso
-                game.getBatch().end();
-            }
+            if (game.getBatch().isDrawing()) game.getBatch().end();
             game.setScreen(new GameOverScreen(game));
             dispose();
             return;
         }
 
-        // --- DIBUJO ---
         ScreenUtils.clear(0, 0, 0.2f, 1);
         camera.update();
         game.getBatch().setProjectionMatrix(camera.combined);
 
         game.getBatch().begin();
-
         font.draw(game.getBatch(), "HighScore: " + GameManager.getInstance().getHighscore(), 5, 475);
         font.draw(game.getBatch(), "Tormenta: " + GameManager.getInstance().getContadorTormenta() + " / 3", 600, 475);
         font.draw(game.getBatch(), "Gotas: " + GameManager.getInstance().getPuntos(), 5, 40);
@@ -118,11 +113,9 @@ public class GameScreen implements Screen {
                     camera.viewportHeight / 2f - texTrueno.getHeight() / 2f
             );
         }
-
         game.getBatch().end();
     }
 
-    // Asegúrate de tener TODAS las firmas de Screen:
     @Override public void show()   { lluvia.continuar(); }
     @Override public void hide()   {}
     @Override public void pause() {
@@ -134,13 +127,13 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
-        // detener audio antes de liberar
         try { sndTrueno.stop(); } catch (Exception ignored) {}
         try { sndHurt.stop(); }   catch (Exception ignored) {}
         try { sndDrop.stop(); }   catch (Exception ignored) {}
         try { sndVida.stop(); }   catch (Exception ignored) {}
         try { sndPowerup.stop(); }catch (Exception ignored) {}
         try { rainMusic.stop(); } catch (Exception ignored) {}
+        GameManager.getInstance().getAudioBus().stopAll();
 
         tarro.destruir();
         lluvia.destruir();
@@ -159,5 +152,8 @@ public class GameScreen implements Screen {
         sndVida.dispose();
         sndPowerup.dispose();
         sndTrueno.dispose();
+
+        rainMusic.dispose();
+        windMusic.dispose();
     }
 }
