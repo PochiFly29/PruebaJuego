@@ -2,7 +2,6 @@ package com.mygdx.game;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
-import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
@@ -10,194 +9,173 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
 
-// La "Fábrica" (Spawner)
+import java.util.EnumMap;
+import java.util.Map;
+
+import com.mygdx.game.imovimiento.IComportamientoMovimiento;
+
 public class Lluvia {
 
-    private Array<ObjetoQueCae> objetosEnPantalla;
+    public enum TipoSpawn { BUENA, MALA, VIDA, ESCUDO, IMAN, TORMENTA }
+
+    private interface Fabrica {
+        ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov);
+    }
+
+    private final Array<ObjetoCayendo> objetos = new Array<ObjetoCayendo>();
     private long lastDropTime;
 
-    // Almacén de assets
-    private Texture texGotaBuena;
-    private Texture texGotaMala;
-    private Texture texVidaExtra;
-    private Sound sndDrop;
-    private Sound sndVida;
-    private Sound sndPowerup;
-    private Music rainMusic;
-    private Texture texEscudo;
-    private Texture texIman;
-    private Texture texTormenta;
+    private final Texture texBuena, texMala, texVida, texEscudo, texIman, texTormenta;
+    private final com.badlogic.gdx.audio.Sound sndDrop, sndVida, sndPowerup;
+    private final Music rainMusic;
 
-    private final long SPAWN_TIMER_NORMAL = 100000000; // 0.1s
-    private final long SPAWN_TIMER_TORMENTA = 30000000; // 0.03s
+    private int   ancho = 64, alto = 64;
+    private float pantallaAncho = 800f, pantallaAlto = 480f;
+
+    private long spawnNormalNs = 100_000_000L;   // 0.10s
+    private long spawnTormentaNs = 30_000_000L;  // 0.03s
+
+    private float pBuena = 0.70f;
+    private float pMala  = 0.27f;
+    private float pVida  = 0.02f;
+    private float pRaras = 0.01f;
+
+    private float pEscudo = 1f/3f, pIman = 1f/3f, pTormenta = 1f/3f;
+
+    private boolean soloBuenas = false;
+
+    private final Map<TipoSpawn, Fabrica> fabrica = new EnumMap<TipoSpawn, Fabrica>(TipoSpawn.class);
 
     public Lluvia(Texture gotaBuena, Texture gotaMala, Texture vidaExtra,
                   Texture texEscudo, Texture texIman, Texture texTormenta,
-                  Sound dropSound, Sound lifeSound, Sound powerupSound, Music mm) {
-        this.rainMusic = mm;
-        this.sndDrop = dropSound;
-        this.sndVida = lifeSound;
-        this.sndPowerup = powerupSound; // Asignar sonido
-        this.texGotaBuena = gotaBuena;
-        this.texGotaMala = gotaMala;
-        this.texVidaExtra = vidaExtra;
-        this.texEscudo = texEscudo; // Asignar texturas
+                  com.badlogic.gdx.audio.Sound dropSound, com.badlogic.gdx.audio.Sound lifeSound, com.badlogic.gdx.audio.Sound powerupSound,
+                  Music rainMusic) {
+
+        this.texBuena = gotaBuena;
+        this.texMala = gotaMala;
+        this.texVida = vidaExtra;
+        this.texEscudo = texEscudo;
         this.texIman = texIman;
         this.texTormenta = texTormenta;
+        this.sndDrop = dropSound;
+        this.sndVida = lifeSound;
+        this.sndPowerup = powerupSound;
+        this.rainMusic = rainMusic;
+
+        fabrica.put(TipoSpawn.BUENA, new Fabrica() {
+            public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
+                return new GotaBuena(Lluvia.this.texBuena, hb, mov, Lluvia.this.sndDrop);
+            }
+        });
+        fabrica.put(TipoSpawn.MALA, new Fabrica() {
+            public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
+                return new GotaMala(Lluvia.this.texMala, hb, mov);
+            }
+        });
+        fabrica.put(TipoSpawn.VIDA, new Fabrica() {
+            public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
+                return new VidaExtra(Lluvia.this.texVida, hb, mov, Lluvia.this.sndVida);
+            }
+        });
+        fabrica.put(TipoSpawn.ESCUDO, new Fabrica() {
+            public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
+                return new PowerUpEscudo(Lluvia.this.texEscudo, hb, mov, Lluvia.this.sndPowerup);
+            }
+        });
+        fabrica.put(TipoSpawn.IMAN, new Fabrica() {
+            public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
+                return new PowerUpIman(Lluvia.this.texIman, hb, mov, Lluvia.this.sndPowerup);
+            }
+        });
+        fabrica.put(TipoSpawn.TORMENTA, new Fabrica() {
+            public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
+                return new PowerUpTormenta(Lluvia.this.texTormenta, hb, mov, Lluvia.this.sndPowerup);
+            }
+        });
     }
 
+    public Lluvia setTamañoHitbox(int ancho, int alto) { this.ancho = ancho; this.alto = alto; return this; }
+    public Lluvia setDimensionesPantalla(float w, float h) { this.pantallaAncho = w; this.pantallaAlto = h; return this; }
+    public Lluvia setTimers(long normalNs, long tormentaNs) { this.spawnNormalNs = normalNs; this.spawnTormentaNs = tormentaNs; return this; }
+    public Lluvia setProbabilidades(float pBuena, float pMala, float pVida, float pRaras) {
+        this.pBuena = pBuena; this.pMala = pMala; this.pVida = pVida; this.pRaras = pRaras; return this;
+    }
+    public Lluvia setRarasDistrib(float pEscudo, float pIman, float pTormenta) {
+        this.pEscudo = pEscudo; this.pIman = pIman; this.pTormenta = pTormenta; return this;
+    }
+    public void setSoloBuenas(boolean soloBuenas) { this.soloBuenas = soloBuenas; }
+
     public void crear() {
-        objetosEnPantalla = new Array<ObjetoQueCae>();
-        crearObjetoQueCae();
+        objetos.clear();
+        lastDropTime = TimeUtils.nanoTime();
         rainMusic.setLooping(true);
         rainMusic.play();
     }
 
-    // Lógica de la Fábrica
-    private void crearObjetoQueCae() {
-
+    public void actualizarMovimiento(Tarro tarro) {
         GameManager gm = GameManager.getInstance();
 
-        // 1. Preguntar al Cerebro si estamos en pausa
-        if (gm.estaEnPausa()) {
+        long spawnTarget = (gm.getEstadoActual() == GameManager.EstadoJuego.TORMENTA_ESPECIAL)
+                ? spawnTormentaNs : spawnNormalNs;
+
+        if (TimeUtils.nanoTime() - lastDropTime > spawnTarget) {
+            crearObjeto(gm);
             lastDropTime = TimeUtils.nanoTime();
-            return;
         }
 
-        // 2. Lógica de Spawneo (Normal vs Tormenta)
-        if (gm.getEstadoActual() == GameManager.EstadoJuego.TORMENTA_ESPECIAL) {
-            // --- MODO TORMENTA ---
-            // Solo crea Gotas Buenas muy rápido
-            IComportamientoMovimiento mov = gm.getMovimientoParaGota();
-            float deriva = mov.getDerivaHorizontal(480, mov.getVelocidadVertical());
-            float rot = mov.getRotacion();
-            float spawnX = MathUtils.random(0, 800 - 64) - deriva;
-
-            Rectangle hitbox = new Rectangle(spawnX, 480, 64, 64);
-            ObjetoQueCae nuevaGota = new GotaBuena(texGotaBuena, hitbox, mov, sndDrop);
-            nuevaGota.setRotacion(rot);
-            objetosEnPantalla.add(nuevaGota);
-
-        } else {
-            // --- MODO NORMAL ---
-            float chance = MathUtils.random(); // Valor entre 0.0 y 1.0
-            boolean esPowerup = false;
-            int tipoPowerup = 0; // 1:Vida, 2:Escudo, 3:Iman, 4:Tormenta
-
-            // --- LÓGICA DE PROBABILIDAD REVISADA ---
-            // 70% Gota Buena (chance < 0.70)
-            // 27% Gota Mala (chance >= 0.70 y < 0.97)
-            // 2% Vida Extra (chance >= 0.97 y < 0.99)
-            // 1% Poderes Raros (Escudo, Imán, Tormenta) (chance >= 0.99)
-            // -------------------------------------------
-
-            if (chance < 0.70f) {
-                // Es Gota Buena (no hacer nada aquí)
-            } else if (chance < 0.97f) {
-                // Es Gota Mala (no hacer nada aquí)
-            } else if (chance < 0.99f) {
-                // Es Vida Extra (2% de chance)
-                esPowerup = true;
-                tipoPowerup = 1; // 1 = Vida
-            } else {
-                // Es un Poder Raro (1% de chance total)
-                esPowerup = true;
-                // Asignar aleatoriamente entre Escudo (2), Imán (3) y Tormenta (4)
-                tipoPowerup = MathUtils.random(2, 4);
-            }
-            // --- FIN DE LÓGICA REVISADA ---
-
-            // 4. Pedir al Cerebro la Estrategia
-            IComportamientoMovimiento movimiento;
-            if (esPowerup) {
-                movimiento = gm.getMovimientoParaPowerup();
-            } else {
-                movimiento = gm.getMovimientoParaGota();
-            }
-
-            // 5. Preguntar a la Estrategia
-            float derivaHorizontal = movimiento.getDerivaHorizontal(480, movimiento.getVelocidadVertical());
-            float rotacion = movimiento.getRotacion();
-
-            // 6. Calcular Spawn
-            float spawnXFinal = MathUtils.random(0, 800 - 64) - derivaHorizontal;
-            Rectangle hitbox = new Rectangle(spawnXFinal, 480, 64, 64);
-
-            // 7. Crear el Objeto
-            ObjetoQueCae nuevoObjeto;
-
-            if (esPowerup) {
-                switch (tipoPowerup) {
-                    case 1:
-                        nuevoObjeto = new VidaExtra(texVidaExtra, hitbox, movimiento, sndVida);
-                        break;
-                    case 2:
-                        nuevoObjeto = new PowerUpEscudo(texEscudo, hitbox, movimiento, sndPowerup);
-                        break;
-                    case 3:
-                        nuevoObjeto = new PowerUpIman(texIman, hitbox, movimiento, sndPowerup);
-                        break;
-                    case 4:
-                        nuevoObjeto = new PowerUpTormenta(texTormenta, hitbox, movimiento, sndPowerup);
-                        break;
-                    default:
-                        // Fallback a Gota Buena
-                        nuevoObjeto = new GotaBuena(texGotaBuena, hitbox, movimiento, sndDrop);
-                }
-            } else {
-                // Gota Buena vs Gota Mala
-                if (chance < 0.70f) { // 70% Gota Buena
-                    nuevoObjeto = new GotaBuena(texGotaBuena, hitbox, movimiento, sndDrop);
-                } else { // Gota Mala
-                    nuevoObjeto = new GotaMala(texGotaMala, hitbox, movimiento);
-                }
-            }
-
-            nuevoObjeto.setRotacion(rotacion);
-            objetosEnPantalla.add(nuevoObjeto);
-        }
-
-        lastDropTime = TimeUtils.nanoTime();
-    }
-
-    // Actualiza todos los objetos
-    public void actualizarMovimiento(Tarro tarro) {
-
-        // --- TIMER DE SPAWN MODIFICADO ---
-        long timerSpawnRequerido = (GameManager.getInstance().getEstadoActual() == GameManager.EstadoJuego.TORMENTA_ESPECIAL)
-                ? SPAWN_TIMER_TORMENTA
-                : SPAWN_TIMER_NORMAL;
-
-        if (TimeUtils.nanoTime() - lastDropTime > timerSpawnRequerido)
-            crearObjetoQueCae();
-
-        // (Iteración y update de objetos sin cambios)
-        for (int i = objetosEnPantalla.size - 1; i >= 0; i--) {
-            ObjetoQueCae objeto = objetosEnPantalla.get(i);
-            objeto.update(Gdx.graphics.getDeltaTime(), tarro);
-
-            if (objeto.marcadoParaEliminar) {
-                objetosEnPantalla.removeIndex(i);
-            }
+        for (int i = objetos.size - 1; i >= 0; i--) {
+            ObjetoCayendo o = objetos.get(i);
+            o.update(Gdx.graphics.getDeltaTime(), tarro);
+            if (o.marcadoParaEliminar) objetos.removeIndex(i);
         }
     }
 
-    // Dibuja todos los objetos
     public void actualizarDibujoLluvia(SpriteBatch batch) {
-        for (ObjetoQueCae objeto : objetosEnPantalla) {
-            objeto.dibujar(batch);
-        }
+        for (ObjetoCayendo o : objetos) o.dibujar(batch);
     }
 
-    public void destruir() {
-        rainMusic.dispose();
+    public void pausar()    { rainMusic.stop(); }
+    public void continuar() { rainMusic.play(); }
+    public void destruir()  { rainMusic.dispose(); }
+
+    private void crearObjeto(GameManager gm) {
+        boolean enTormenta = (gm.getEstadoActual() == GameManager.EstadoJuego.TORMENTA_ESPECIAL);
+        TipoSpawn tipo = elegirTipo(enTormenta);
+
+        IComportamientoMovimiento base = (tipo == TipoSpawn.BUENA || tipo == TipoSpawn.MALA)
+                ? gm.getMovimientoParaGota()
+                : gm.getMovimientoParaPowerup();
+        IComportamientoMovimiento mov = base.crearNueva();
+
+        float velY = Math.max(1e-6f, mov.getVelocidadVertical());
+        float deriva = mov.getDerivaHorizontal(pantallaAlto, velY);
+        float rot = mov.getRotacion();
+
+        float xSpawn = MathUtils.random(0f, Math.max(0f, pantallaAncho - ancho)) - deriva;
+        Rectangle hb = new Rectangle(xSpawn, pantallaAlto, ancho, alto);
+
+        Fabrica fab = fabrica.get(tipo);
+        if (fab == null) fab = fabrica.get(TipoSpawn.BUENA);
+        ObjetoCayendo obj = fab.crear(hb, mov);
+        obj.setRotacion(rot);
+        objetos.add(obj);
     }
 
-    public void pausar() {
-        rainMusic.stop();
-    }
+    private TipoSpawn elegirTipo(boolean enTormenta) {
+        if (soloBuenas || enTormenta) return TipoSpawn.BUENA;
 
-    public void continuar() {
-        rainMusic.play();
+        float r = MathUtils.random();
+        float tBuena = pBuena;
+        float tMala  = tBuena + pMala;
+        float tVida  = tMala  + pVida;
+
+        if (r < tBuena)  return TipoSpawn.BUENA;
+        if (r < tMala)   return TipoSpawn.MALA;
+        if (r < tVida)   return TipoSpawn.VIDA;
+
+        float rr = MathUtils.random();
+        float e = pEscudo;
+        float i = e + pIman;
+        return (rr < e) ? TipoSpawn.ESCUDO : (rr < i ? TipoSpawn.IMAN : TipoSpawn.TORMENTA);
     }
 }

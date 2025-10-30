@@ -8,18 +8,21 @@ public class GameLluviaMenu extends Game {
 
     private SpriteBatch batch;
     private BitmapFont font;
-    // private int higherScore; // <-- ELIMINADO
 
+    @Override
     public void create() {
         batch = new SpriteBatch();
-        font = new BitmapFont(); // use libGDX's default Arial font
-        this.setScreen(new MainMenuScreen(this));
+        font = new BitmapFont(); // Arial default
+
+        setScreen(new MainMenuScreen(this));
     }
 
+    @Override
     public void render() {
-        super.render(); // important!
+        super.render();
     }
 
+    @Override
     public void dispose() {
         batch.dispose();
         font.dispose();

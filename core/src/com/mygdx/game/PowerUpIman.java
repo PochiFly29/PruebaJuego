@@ -3,11 +3,11 @@ package com.mygdx.game;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Rectangle;
+import com.mygdx.game.imovimiento.IComportamientoMovimiento;
 
-// Power-up que activa un imán
-public class PowerUpIman extends ObjetoQueCae {
+public class PowerUpIman extends ObjetoCayendo {
 
-    private Sound powerupSound;
+    private final Sound powerupSound;
 
     public PowerUpIman(Texture textura, Rectangle hitbox, IComportamientoMovimiento movimiento, Sound sound) {
         super(textura, hitbox, movimiento);
@@ -15,14 +15,11 @@ public class PowerUpIman extends ObjetoQueCae {
     }
 
     @Override
-    protected void aplicarEfecto(Tarro tarro) {
-        // Le dice al GameManager que active el imán
-        GameManager.getInstance().activarIman(5.0f); // 5 segundos
-        powerupSound.play();
+    protected void alColisionar(Tarro tarro) {
+        GameManager.getInstance().activarIman(5.0f);
+        if (powerupSound != null) powerupSound.play();
     }
 
     @Override
-    protected boolean esAtraible() {
-        return false;
-    }
+    protected boolean esAtraible() { return false; }
 }

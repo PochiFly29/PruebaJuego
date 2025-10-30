@@ -3,10 +3,11 @@ package com.mygdx.game;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Rectangle;
+import com.mygdx.game.imovimiento.IComportamientoMovimiento;
 
-public class VidaExtra extends ObjetoQueCae {
+public class VidaExtra extends ObjetoCayendo {
 
-    private Sound lifeSound;
+    private final Sound lifeSound;
 
     public VidaExtra(Texture textura, Rectangle hitbox, IComportamientoMovimiento movimiento, Sound lifeSound) {
         super(textura, hitbox, movimiento);
@@ -14,13 +15,11 @@ public class VidaExtra extends ObjetoQueCae {
     }
 
     @Override
-    protected void aplicarEfecto(Tarro tarro) {
+    protected void alColisionar(Tarro tarro) {
         GameManager.getInstance().sumarVida();
-        lifeSound.play();
+        if (lifeSound != null) lifeSound.play();
     }
 
     @Override
-    protected boolean esAtraible() {
-        return false;
-    }
+    protected boolean esAtraible() { return false; }
 }

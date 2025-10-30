@@ -3,11 +3,11 @@ package com.mygdx.game;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Rectangle;
+import com.mygdx.game.imovimiento.IComportamientoMovimiento;
 
-// Power-up que da un escudo temporal
-public class PowerUpEscudo extends ObjetoQueCae {
+public class PowerUpEscudo extends ObjetoCayendo {
 
-    private Sound powerupSound; // Sonido al tomarlo
+    private final Sound powerupSound;
 
     public PowerUpEscudo(Texture textura, Rectangle hitbox, IComportamientoMovimiento movimiento, Sound sound) {
         super(textura, hitbox, movimiento);
@@ -15,15 +15,11 @@ public class PowerUpEscudo extends ObjetoQueCae {
     }
 
     @Override
-    protected void aplicarEfecto(Tarro tarro) {
-        // Le dice al GameManager que active el escudo
-        GameManager.getInstance().activarEscudo(7.0f); // 7 segundos
-        powerupSound.play();
+    protected void alColisionar(Tarro tarro) {
+        GameManager.getInstance().activarEscudo(7.0f);
+        if (powerupSound != null) powerupSound.play();
     }
 
     @Override
-    protected boolean esAtraible() {
-        // El imán también atrae este power-up
-        return false;
-    }
+    protected boolean esAtraible() { return false; }
 }
