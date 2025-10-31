@@ -22,29 +22,23 @@ public class Lluvia {
         BUENA, MALA, VIDA, ESCUDO, IMAN, TORMENTA
     }
 
-    // Reemplazo de BiFunction<Rectangle, IComportamientoMovimiento, ObjetoCayendo> para Java 7
     private interface Fabrica {
         ObjetoCayendo crear(Rectangle hb, IMovimientos mov);
     }
 
     private final Array<ObjetoCayendo> objetos = new Array<ObjetoCayendo>();
     private long lastDropTime;
-
-    // Escenario activo
     private IEscenarios escenario;
 
-    // Assets
     private final Texture texBuena, texMala, texVida, texEscudo, texIman, texTormenta;
     private final com.badlogic.gdx.audio.Sound sndDrop, sndVida, sndPowerup;
     private final Music rainMusic;
 
-    // Parámetros
-    private int   ancho = 64, alto = 64;
+    private int ancho = 64, alto = 64;
     private float pantallaAncho = 800f, pantallaAlto = 480f;
 
-    // Timers de fallback (solo se usan si NO hay escenario)
-    private long spawnNormalNs   = 100_000_000L; // 0.10 s
-    private long spawnTormentaNs =  30_000_000L; // 0.03 s
+    private long spawnNormalNs = 100_000_000L;
+    private long spawnTormentaNs = 30_000_000L;
 
     private float pBuena = 0.70f;
     private float pMala  = 0.27f;
@@ -55,17 +49,13 @@ public class Lluvia {
 
     private boolean soloBuenas = false;
 
-    // Registro de fábricas
     private final Map<TipoSpawn, Fabrica> fabrica = new EnumMap<TipoSpawn, Fabrica>(TipoSpawn.class);
 
     public Iterable<ObjetoCayendo> getObjetos() {
         return objetos;
     }
 
-    public Lluvia(Texture gotaBuena, Texture gotaMala, Texture vidaExtra,
-                  Texture texEscudo, Texture texIman, final Texture texTormenta,
-                  com.badlogic.gdx.audio.Sound dropSound, com.badlogic.gdx.audio.Sound lifeSound, com.badlogic.gdx.audio.Sound powerupSound,
-                  Music rainMusic) {
+    public Lluvia(Texture gotaBuena, Texture gotaMala, Texture vidaExtra, Texture texEscudo, Texture texIman, final Texture texTormenta, com.badlogic.gdx.audio.Sound dropSound, com.badlogic.gdx.audio.Sound lifeSound, com.badlogic.gdx.audio.Sound powerupSound, Music rainMusic) {
 
         this.texBuena = gotaBuena;
         this.texMala = gotaMala;
@@ -113,7 +103,6 @@ public class Lluvia {
         this.escenario.init(this);
     }
 
-    // ---------- Config opcional ----------
     public Lluvia setTamañoHitbox(int ancho, int alto) { this.ancho = ancho; this.alto = alto; return this; }
     public Lluvia setDimensionesPantalla(float w, float h) { this.pantallaAncho = w; this.pantallaAlto = h; return this; }
     public Lluvia setTimers(long normalNs, long tormentaNs) { this.spawnNormalNs = normalNs; this.spawnTormentaNs = tormentaNs; return this; }
@@ -133,23 +122,28 @@ public class Lluvia {
     }
 
     public void actualizarMovimiento(Tarro tarro) {
-        if (escenario != null) {
-            float dt = Gdx.graphics.getDeltaTime();
-            escenario.update(this, tarro, dt);
-        } else {
-            long spawnTarget = (GameManager.getInstance().getEstadoActual() == GameManager.EstadoJuego.TORMENTA_ESPECIAL)
-                    ? spawnTormentaNs : spawnNormalNs;
+        float dt = Gdx.graphics.getDeltaTime();
 
-            if (TimeUtils.nanoTime() - lastDropTime > spawnTarget) {
-                TipoSpawn tipo = elegirTipo(false);
-                spawnAhora(tipo);
-                lastDropTime = TimeUtils.nanoTime();
+        boolean enPausa = GameManager.getInstance().estaEnPausa();
+
+        if (escenario != null) {
+            if (!enPausa) {
+                escenario.update(this, tarro, dt);
+            }
+        } else {
+            if (!enPausa) {
+                long spawnTarget = (GameManager.getInstance().getEstadoActual() == GameManager.EstadoJuego.TORMENTA_ESPECIAL) ? spawnTormentaNs : spawnNormalNs;
+                if (TimeUtils.nanoTime() - lastDropTime > spawnTarget) {
+                    TipoSpawn tipo = elegirTipo(false);
+                    spawnAhora(tipo);
+                    lastDropTime = TimeUtils.nanoTime();
+                }
             }
         }
 
         for (int i = objetos.size - 1; i >= 0; i--) {
             ObjetoCayendo o = objetos.get(i);
-            o.update(Gdx.graphics.getDeltaTime(), tarro);
+            o.update(dt, tarro);
             if (o.marcadoParaEliminar) objetos.removeIndex(i);
         }
     }
@@ -162,7 +156,6 @@ public class Lluvia {
     public void continuar() { rainMusic.play(); }
     public void destruir()  { rainMusic.dispose(); }
 
-    // ---------- API para escenarios ----------
     public void setEscenario(IEscenarios nuevo) {
         this.escenario = nuevo;
         if (this.escenario != null) this.escenario.init(this);
@@ -174,12 +167,21 @@ public class Lluvia {
 
     public void spawnAhora(TipoSpawn tipo) {
         GameManager gm = GameManager.getInstance();
-
-        IMovimientos base = (tipo == TipoSpawn.BUENA || tipo == TipoSpawn.MALA)
-                ? gm.getMovimientoParaGota()
-                : gm.getMovimientoParaPowerup();
+        IMovimientos base = (tipo == TipoSpawn.BUENA || tipo == TipoSpawn.MALA) ? gm.getMovimientoParaGota() : gm.getMovimientoParaPowerup();
         IMovimientos mov = base.crearNueva();
+        spawnCore(tipo, mov);
+    }
 
+    public void spawnAhora(TipoSpawn tipo, IMovimientos movOverride) {
+        IMovimientos mov = (movOverride != null) ? movOverride.crearNueva() : null;
+        if (mov == null) {
+            spawnAhora(tipo);
+            return;
+        }
+        spawnCore(tipo, mov);
+    }
+
+    private void spawnCore(TipoSpawn tipo, IMovimientos mov) {
         float velY   = Math.max(1e-6f, mov.getVelocidadVertical());
         float deriva = mov.getDerivaHorizontal(pantallaAlto, velY);
         float rot    = mov.getRotacion();
@@ -194,15 +196,10 @@ public class Lluvia {
         objetos.add(obj);
     }
 
-    public void spawnAhoraBuena() {
-        spawnAhora(TipoSpawn.BUENA);
-    }
-
     public TipoSpawn elegirTipoNormal() {
         return elegirTipo(false);
     }
 
-    // ---------- Internos ----------
     private TipoSpawn elegirTipo(boolean enTormenta) {
         if (soloBuenas || enTormenta) return TipoSpawn.BUENA;
 

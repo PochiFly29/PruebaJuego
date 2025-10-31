@@ -41,14 +41,14 @@ public class GameScreen implements Screen {
 
         shapeRenderer = new ShapeRenderer();
 
-        texTarro     = new Texture(Gdx.files.internal("bucket.png"));
+        texTarro = new Texture(Gdx.files.internal("bucket.png"));
         texGotaBuena = new Texture(Gdx.files.internal("drop.png"));
-        texGotaMala  = new Texture(Gdx.files.internal("dropBad.png"));
+        texGotaMala = new Texture(Gdx.files.internal("dropBad.png"));
         texVidaExtra = new Texture(Gdx.files.internal("vidaExtra.png"));
-        texEscudo    = new Texture(Gdx.files.internal("shield.png"));
-        texIman      = new Texture(Gdx.files.internal("magnet.png"));
-        texTormenta  = new Texture(Gdx.files.internal("storm_pickup.png"));
-        texTrueno    = new Texture(Gdx.files.internal("trueno.png"));
+        texEscudo = new Texture(Gdx.files.internal("shield.png"));
+        texIman = new Texture(Gdx.files.internal("magnet.png"));
+        texTormenta = new Texture(Gdx.files.internal("storm_pickup.png"));
+        texTrueno = new Texture(Gdx.files.internal("trueno.png"));
 
         setLinear(texTarro, texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta, texTrueno);
 
@@ -65,11 +65,7 @@ public class GameScreen implements Screen {
         tarro = new Tarro(texTarro, sndHurt);
         tarro.setEscudoTexture(texEscudo);
 
-        lluvia = new Lluvia(
-                texGotaBuena, texGotaMala, texVidaExtra,
-                texEscudo, texIman, texTormenta,
-                sndDrop, sndVida, sndPowerup, rainMusic
-        );
+        lluvia = new Lluvia( texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta,sndDrop, sndVida, sndPowerup, rainMusic);
 
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 800, 480);
@@ -108,10 +104,7 @@ public class GameScreen implements Screen {
 
         if (GameManager.getInstance().getVidas() <= 0) {
             GameManager.getInstance().actualizarHighscore();
-            try { sndTrueno.stop(); } catch (Exception ignored) {}
-            try { rainMusic.stop(); } catch (Exception ignored) {}
-            GameManager.getInstance().getAudioBus().stopAll();
-
+            stopAllAudio();
             if (game.getBatch().isDrawing()) game.getBatch().end();
             game.setScreen(new GameOverScreen(game));
             dispose();
@@ -120,10 +113,9 @@ public class GameScreen implements Screen {
 
         ScreenUtils.clear(0, 0, 0.2f, 1);
         camera.update();
-
         game.getBatch().setProjectionMatrix(camera.combined);
-        game.getBatch().begin();
 
+        game.getBatch().begin();
         font.draw(game.getBatch(), "HighScore: " + GameManager.getInstance().getHighscore(), 5, 475);
         font.draw(game.getBatch(), "Tormenta: " + GameManager.getInstance().getContadorTormenta() + " / 3", 600, 475);
         font.draw(game.getBatch(), "Gotas: " + GameManager.getInstance().getPuntos(), 5, 40);
@@ -133,13 +125,8 @@ public class GameScreen implements Screen {
         lluvia.actualizarDibujoLluvia(game.getBatch());
 
         if (GameManager.getInstance().estaEnPausaDeTransicion()) {
-            game.getBatch().draw(
-                    texTrueno,
-                    camera.viewportWidth / 2f - texTrueno.getWidth() / 2f,
-                    camera.viewportHeight / 2f - texTrueno.getHeight() / 2f
-            );
+            game.getBatch().draw(texTrueno,camera.viewportWidth / 2f - texTrueno.getWidth() / 2f,camera.viewportHeight / 2f - texTrueno.getHeight() / 2f);
         }
-
         game.getBatch().end();
 
         if (debugHitbox) {
@@ -162,7 +149,6 @@ public class GameScreen implements Screen {
                     shapeRenderer.circle(c.x, c.y, c.radius);
                 }
             }
-
             shapeRenderer.end();
         }
     }
@@ -178,13 +164,7 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
-        try { sndTrueno.stop(); } catch (Exception ignored) {}
-        try { sndHurt.stop(); } catch (Exception ignored) {}
-        try { sndDrop.stop(); } catch (Exception ignored) {}
-        try { sndVida.stop(); } catch (Exception ignored) {}
-        try { sndPowerup.stop(); } catch (Exception ignored) {}
-        try { rainMusic.stop(); } catch (Exception ignored) {}
-        GameManager.getInstance().getAudioBus().stopAll();
+        stopAllAudio();
 
         tarro.destruir();
         lluvia.destruir();
@@ -209,5 +189,9 @@ public class GameScreen implements Screen {
 
         if (font != null) font.dispose();
         if (shapeRenderer != null) shapeRenderer.dispose();
+    }
+
+    private void stopAllAudio() {
+        GameManager.getInstance().getAudioBus().stopAll();
     }
 }

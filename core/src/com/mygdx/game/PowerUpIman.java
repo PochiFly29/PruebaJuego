@@ -12,6 +12,7 @@ public class PowerUpIman extends ObjetoCayendo {
     public PowerUpIman(Texture textura, Rectangle hitbox, IMovimientos movimiento, Sound sound) {
         super(textura, hitbox, movimiento);
         this.powerupSound = sound;
+        setCircleScale(0.40f);
     }
 
     @Override

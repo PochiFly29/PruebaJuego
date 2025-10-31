@@ -12,11 +12,12 @@ public class PowerUpEscudo extends ObjetoCayendo {
     public PowerUpEscudo(Texture textura, Rectangle hitbox, IMovimientos movimiento, Sound sound) {
         super(textura, hitbox, movimiento);
         this.powerupSound = sound;
+        setCircleScale(0.40f);
     }
 
     @Override
     protected void alColisionar(Tarro tarro) {
-        GameManager.getInstance().activarEscudo(7.0f);
+        GameManager.getInstance().activarEscudo(9.0f);
         if (powerupSound != null) powerupSound.play();
     }
 

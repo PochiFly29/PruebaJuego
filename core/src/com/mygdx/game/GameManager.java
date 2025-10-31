@@ -20,7 +20,6 @@ public class GameManager {
         return instancia;
     }
 
-    // Metodo para manejar distintos audios
     public static class AudioBus {
         private final Map<String, Music> musics = new HashMap<String, Music>();
         private final Map<String, Integer> refs = new HashMap<String, Integer>();
@@ -81,27 +80,23 @@ public class GameManager {
     private int highscore;
     private static final int VIDAS_INICIALES = 3;
 
-    // Parametros
     private static final int SCORE_PARA_ETAPA_2 = 1000;
     private static final int SCORE_PARA_ETAPA_3 = 2500;
     private static final float DURACION_PAUSA = 2.0f;
     private static final float DURACION_VIENTO = 5.0f;
 
-    // Power-ups
     private boolean escudoActivo = false;
     private float timerEscudo = 0f;
     private boolean imanActivo = false;
     private float timerIman = 0f;
 
-    // Tormenta
     private int contadorTormenta = 0;
     private static final int MAX_TORMENTA_CARGA = 3;
     private static final float DURACION_TORMENTA = 5.0f;
-    private static final float DURACION_PAUSA_POST_TORMENTA = 2.0f;
+    private static final float DURACION_PAUSA_POST_TORMENTA = 1.0f;
 
     private boolean vientoALaDerecha = true;
 
-    // Estrategias
     private final IMovimientos movRecto_Lento = new MovimientoVertical(200f);
     private final IMovimientos movRecto_Normal = new MovimientoVertical(300f);
     private final IMovimientos movRecto_Rapido = new MovimientoVertical(450f);
@@ -116,6 +111,8 @@ public class GameManager {
 
     private static final String PREFS_NAME = "GameLluviaPrefs";
     private static final String PREF_HIGHSCORE = "highscore";
+
+    private IMovimientos movGotaPrevioATormenta;
 
     private GameManager() {
         Preferences prefs = Gdx.app.getPreferences(PREFS_NAME);
@@ -132,7 +129,6 @@ public class GameManager {
         });
     }
     private void configurarPoliticas() {
-        // Gotas
         addPolitica(politicaGotas, EstadoJuego.ETAPA_1, movRecto_Normal);
         addPolitica(politicaGotas, EstadoJuego.PAUSA_PARA_ETAPA_2, movRecto_Normal);
         addPolitica(politicaGotas, EstadoJuego.ETAPA_2, movDiag_Derecha);
@@ -145,7 +141,6 @@ public class GameManager {
         addPolitica(politicaGotas, EstadoJuego.TORMENTA_ESPECIAL,   movTormenta);
         addPolitica(politicaGotas, EstadoJuego.PAUSA_POST_TORMENTA, movRecto_Normal);
 
-        // Powerups
         addPolitica(politicaPowerups, EstadoJuego.ETAPA_1, movRecto_Lento);
         addPolitica(politicaPowerups, EstadoJuego.PAUSA_PARA_ETAPA_2, movRecto_Lento);
         addPolitica(politicaPowerups, EstadoJuego.ETAPA_2, movRecto_Rapido);
@@ -172,6 +167,7 @@ public class GameManager {
         imanActivo  = false; timerIman  = 0f;
         vientoALaDerecha = true;
         audioBus.stopAll(); windOn = false;
+        movGotaPrevioATormenta = null;
     }
 
     public void update(float delta) {
@@ -233,6 +229,10 @@ public class GameManager {
         return (p != null) ? p.get() : movRecto_Lento;
     }
 
+    public IMovimientos getMovimientoGotaPrevioATormenta() {
+        return (movGotaPrevioATormenta != null) ? movGotaPrevioATormenta : getMovimientoParaGota();
+    }
+
     public void sumarPuntos(int cantidad) { puntos += cantidad; }
     public void perderVida() { if (vidas > 0) vidas--; }
     public void sumarVida() { vidas++; }
@@ -246,20 +246,19 @@ public class GameManager {
         }
     }
 
-    // Power ups
     public void activarEscudo(float duracion) { escudoActivo = true; timerEscudo = duracion; }
     public boolean isEscudoActivo() { return escudoActivo; }
     public void consumirEscudo() { escudoActivo = false; timerEscudo = 0f; }
     public void activarIman(float duracion) { imanActivo = true; timerIman = duracion; }
     public boolean isImanActivo() { return imanActivo; }
 
-    // Tormenta
     public void incrementarContadorTormenta() {
         if (estadoActual == EstadoJuego.TORMENTA_ESPECIAL || estadoActual == EstadoJuego.PAUSA_POST_TORMENTA) return;
         contadorTormenta++;
         if (contadorTormenta >= MAX_TORMENTA_CARGA) {
             contadorTormenta = 0;
             estadoPrevio = estadoActual;
+            movGotaPrevioATormenta = getMovimientoParaGota();
             estadoActual = EstadoJuego.TORMENTA_ESPECIAL;
             timerEstado = DURACION_TORMENTA;
             stopWind();

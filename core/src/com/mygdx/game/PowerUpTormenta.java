@@ -15,6 +15,7 @@ public class PowerUpTormenta extends ObjetoCayendo {
         super(textura, hitbox, movimiento);
         this.sfx = sound;
         this.lluvia = lluvia;
+        setCircleScale(0.40f);
     }
 
     @Override

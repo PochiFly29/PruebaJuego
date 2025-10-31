@@ -12,6 +12,7 @@ public class VidaExtra extends ObjetoCayendo {
     public VidaExtra(Texture textura, Rectangle hitbox, IMovimientos movimiento, Sound lifeSound) {
         super(textura, hitbox, movimiento);
         this.lifeSound = lifeSound;
+        setCircleScale(0.40f);
     }
 
     @Override

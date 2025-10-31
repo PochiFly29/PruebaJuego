@@ -56,10 +56,10 @@ public class Tarro {
     }
 
     public void dibujar(SpriteBatch batch) {
-        if (!herido)
-            batch.draw(bucketImage, bucket.x, bucket.y);
-        else {
-            batch.draw(bucketImage, bucket.x, bucket.y + MathUtils.random(-5, 5));
+        if (!herido) {
+            batch.draw(bucketImage, bucket.x, bucket.y, bucket.width, bucket.height);
+        } else {
+            batch.draw(bucketImage, bucket.x, bucket.y + MathUtils.random(-5, 5), bucket.width, bucket.height);
             tiempoHerido--;
             if (tiempoHerido <= 0)
                 herido = false;
@@ -75,7 +75,7 @@ public class Tarro {
         if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
             bucket.x += velx * Gdx.graphics.getDeltaTime();
         if (bucket.x < 0) bucket.x = 0;
-        if (bucket.x > 800 - 64) bucket.x = 800 - 64;
+        if (bucket.x > 800 - bucket.width) bucket.x = 800 - bucket.width;
         syncHitboxes();
     }
 
