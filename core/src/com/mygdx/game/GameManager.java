@@ -3,7 +3,7 @@ package com.mygdx.game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.audio.Music;
-import com.mygdx.game.imovimiento.IComportamientoMovimiento;
+import com.mygdx.game.imovimiento.IMovimientos;
 import com.mygdx.game.imovimiento.MovimientoDiagonal;
 import com.mygdx.game.imovimiento.MovimientoSerpenteante;
 import com.mygdx.game.imovimiento.MovimientoVertical;
@@ -20,6 +20,7 @@ public class GameManager {
         return instancia;
     }
 
+    // Metodo para manejar distintos audios
     public static class AudioBus {
         private final Map<String, Music> musics = new HashMap<String, Music>();
         private final Map<String, Integer> refs = new HashMap<String, Integer>();
@@ -100,16 +101,16 @@ public class GameManager {
 
     private boolean vientoALaDerecha = true;
 
-    // ---------- Estrategias ----------
-    private final IComportamientoMovimiento movRecto_Lento = new MovimientoVertical(200f);
-    private final IComportamientoMovimiento movRecto_Normal = new MovimientoVertical(300f);
-    private final IComportamientoMovimiento movRecto_Rapido = new MovimientoVertical(450f);
-    private final IComportamientoMovimiento movDiag_Derecha = new MovimientoDiagonal(300f,  100f,  25f);
-    private final IComportamientoMovimiento movDiag_Izquierda = new MovimientoDiagonal(300f, -100f, -25f);
-    private final IComportamientoMovimiento movSerpiente = new MovimientoSerpenteante(300f, 50f, 3f);
-    private final IComportamientoMovimiento movTormenta  = new MovimientoVertical(700f);
+    // Estrategias
+    private final IMovimientos movRecto_Lento = new MovimientoVertical(200f);
+    private final IMovimientos movRecto_Normal = new MovimientoVertical(300f);
+    private final IMovimientos movRecto_Rapido = new MovimientoVertical(450f);
+    private final IMovimientos movDiag_Derecha = new MovimientoDiagonal(400f,  150f,  25f);
+    private final IMovimientos movDiag_Izquierda = new MovimientoDiagonal(400f, -150f, -25f);
+    private final IMovimientos movSerpiente = new MovimientoSerpenteante(300f, 50f, 3f);
+    private final IMovimientos movTormenta  = new MovimientoVertical(700f);
 
-    private interface Politica { IComportamientoMovimiento get(); }
+    private interface Politica { IMovimientos get(); }
     private final Map<EstadoJuego, Politica> politicaGotas = new EnumMap<EstadoJuego, Politica>(EstadoJuego.class);
     private final Map<EstadoJuego, Politica> politicaPowerups = new EnumMap<EstadoJuego, Politica>(EstadoJuego.class);
 
@@ -123,8 +124,12 @@ public class GameManager {
         resetJuego();
     }
 
-    private void addPolitica(Map<EstadoJuego, Politica> mapa, EstadoJuego estado, final IComportamientoMovimiento mov) {
-        mapa.put(estado, new Politica() { public IComportamientoMovimiento get() { return mov; } });
+    private void addPolitica(Map<EstadoJuego, Politica> mapa, EstadoJuego estado, final IMovimientos mov) {
+        mapa.put(estado, new Politica() {
+            public IMovimientos get() {
+                return mov;
+            }
+        });
     }
     private void configurarPoliticas() {
         // Gotas
@@ -133,7 +138,7 @@ public class GameManager {
         addPolitica(politicaGotas, EstadoJuego.ETAPA_2, movDiag_Derecha);
         addPolitica(politicaGotas, EstadoJuego.PAUSA_PARA_ETAPA_3, movDiag_Derecha);
         politicaGotas.put(EstadoJuego.ETAPA_3, new Politica() {
-            public IComportamientoMovimiento get() {
+            public IMovimientos get() {
                 return (vientoALaDerecha ? movDiag_Derecha : movDiag_Izquierda);
             }
         });
@@ -219,16 +224,15 @@ public class GameManager {
     public boolean estaEnPausa() { return esPausa(estadoActual); }
     public boolean estaEnPausaDeTransicion() { return esTransicionConTrueno(estadoActual); }
 
-    public IComportamientoMovimiento getMovimientoParaGota() {
+    public IMovimientos getMovimientoParaGota() {
         Politica p = politicaGotas.get(estadoActual);
         return (p != null) ? p.get() : movRecto_Normal;
     }
-    public IComportamientoMovimiento getMovimientoParaPowerup() {
+    public IMovimientos getMovimientoParaPowerup() {
         Politica p = politicaPowerups.get(estadoActual);
         return (p != null) ? p.get() : movRecto_Lento;
     }
 
-    // ---------- Puntos, vidas, récord ----------
     public void sumarPuntos(int cantidad) { puntos += cantidad; }
     public void perderVida() { if (vidas > 0) vidas--; }
     public void sumarVida() { vidas++; }
@@ -242,14 +246,14 @@ public class GameManager {
         }
     }
 
-    // ---------- Power-ups ----------
+    // Power ups
     public void activarEscudo(float duracion) { escudoActivo = true; timerEscudo = duracion; }
     public boolean isEscudoActivo() { return escudoActivo; }
     public void consumirEscudo() { escudoActivo = false; timerEscudo = 0f; }
     public void activarIman(float duracion) { imanActivo = true; timerIman = duracion; }
     public boolean isImanActivo() { return imanActivo; }
 
-    // ---------- Tormenta ----------
+    // Tormenta
     public void incrementarContadorTormenta() {
         if (estadoActual == EstadoJuego.TORMENTA_ESPECIAL || estadoActual == EstadoJuego.PAUSA_POST_TORMENTA) return;
         contadorTormenta++;

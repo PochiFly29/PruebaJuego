@@ -2,7 +2,7 @@ package com.mygdx.game.imovimiento;
 
 import com.mygdx.game.ObjetoCayendo;
 
-public class MovimientoVertical implements IComportamientoMovimiento {
+public class MovimientoVertical implements IMovimientos {
 
     private final float velY;
 
@@ -16,7 +16,7 @@ public class MovimientoVertical implements IComportamientoMovimiento {
     }
 
     @Override
-    public IComportamientoMovimiento crearNueva() {
+    public IMovimientos crearNueva() {
         return new MovimientoVertical(velY);
     }
 

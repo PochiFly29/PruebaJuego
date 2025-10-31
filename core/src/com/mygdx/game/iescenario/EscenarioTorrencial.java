@@ -4,10 +4,10 @@ import com.badlogic.gdx.utils.TimeUtils;
 import com.mygdx.game.Lluvia;
 import com.mygdx.game.Tarro;
 
-public class EscenarioTorrencial implements EscenarioStrat {
-    private static final long  INTERVALO = 30_000_000L; // 0.03s
-    private static final int   BURST     = 3;
-    private static final float DURACION  = 5f;
+public class EscenarioTorrencial implements IEscenarios {
+    private static final long INTERVALO = 50_000_000L;
+    private static final int BURST = 2;
+    private static final float DURACION = 5f;
 
     private long  last;
     private float tiempoAcumulado = 0f;

@@ -2,7 +2,7 @@ package com.mygdx.game.imovimiento;
 
 import com.mygdx.game.ObjetoCayendo;
 
-public class MovimientoSerpenteante implements IComportamientoMovimiento {
+public class MovimientoSerpenteante implements IMovimientos {
 
     private final float velocidadVertical;
     private final float amplitud;
@@ -31,7 +31,7 @@ public class MovimientoSerpenteante implements IComportamientoMovimiento {
         obj.setRotacion(rot);
     }
 
-    public IComportamientoMovimiento crearNueva() {
+    public IMovimientos crearNueva() {
         return new MovimientoSerpenteante(velocidadVertical, amplitud, frecuencia);
     }
 

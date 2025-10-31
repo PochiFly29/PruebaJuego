@@ -9,6 +9,9 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Circle;
+import com.badlogic.gdx.math.Polygon;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 public class GameScreen implements Screen {
@@ -18,15 +21,16 @@ public class GameScreen implements Screen {
     private Tarro tarro;
     private Lluvia lluvia;
 
-    // Assets
+    private boolean debugHitbox = false;
+    private ShapeRenderer shapeRenderer;
+
     private Texture texTarro, texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta, texTrueno;
-    private Sound   sndHurt,  sndDrop,      sndVida,      sndPowerup,  sndTrueno;
-    private Music   rainMusic, windMusic;
+    private Sound sndHurt, sndDrop, sndVida, sndPowerup, sndTrueno;
+    private Music rainMusic, windMusic;
 
     public GameScreen(final GameLluviaMenu game) {
         this.game = game;
 
-        // === Fuente Roboto ===
         FreeTypeFontGenerator gen = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Roboto.ttf"));
         FreeTypeFontGenerator.FreeTypeFontParameter p = new FreeTypeFontGenerator.FreeTypeFontParameter();
         p.size = 28;
@@ -35,7 +39,8 @@ public class GameScreen implements Screen {
         this.font = gen.generateFont(p);
         gen.dispose();
 
-        // === Texturas ===
+        shapeRenderer = new ShapeRenderer();
+
         texTarro     = new Texture(Gdx.files.internal("bucket.png"));
         texGotaBuena = new Texture(Gdx.files.internal("drop.png"));
         texGotaMala  = new Texture(Gdx.files.internal("dropBad.png"));
@@ -45,19 +50,16 @@ public class GameScreen implements Screen {
         texTormenta  = new Texture(Gdx.files.internal("storm_pickup.png"));
         texTrueno    = new Texture(Gdx.files.internal("trueno.png"));
 
-        // Filtro Linear para todas
         setLinear(texTarro, texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta, texTrueno);
 
-        // === Sonidos/Música ===
-        sndHurt     = Gdx.audio.newSound(Gdx.files.internal("hurt.ogg"));
-        sndDrop     = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
-        sndVida     = Gdx.audio.newSound(Gdx.files.internal("life.wav"));
-        sndPowerup  = Gdx.audio.newSound(Gdx.files.internal("powerup.wav"));
-        sndTrueno   = Gdx.audio.newSound(Gdx.files.internal("trueno.wav"));
-        rainMusic   = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
-        windMusic   = Gdx.audio.newMusic(Gdx.files.internal("wind.mp3"));
+        sndHurt = Gdx.audio.newSound(Gdx.files.internal("hurt.ogg"));
+        sndDrop = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
+        sndVida = Gdx.audio.newSound(Gdx.files.internal("life.wav"));
+        sndPowerup = Gdx.audio.newSound(Gdx.files.internal("powerup.wav"));
+        sndTrueno = Gdx.audio.newSound(Gdx.files.internal("trueno.wav"));
+        rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
+        windMusic = Gdx.audio.newMusic(Gdx.files.internal("wind.mp3"));
 
-        // Registrar canal "wind" en el AudioBus
         GameManager.getInstance().setWindMusic(windMusic);
 
         tarro = new Tarro(texTarro, sndHurt);
@@ -85,7 +87,6 @@ public class GameScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        // Input global
         if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             game.setScreen(new GameScreen(game));
             dispose();
@@ -94,6 +95,9 @@ public class GameScreen implements Screen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             pause();
             return;
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.F3)) {
+            debugHitbox = !debugHitbox;
         }
 
         GameManager.getInstance().update(delta);
@@ -116,9 +120,10 @@ public class GameScreen implements Screen {
 
         ScreenUtils.clear(0, 0, 0.2f, 1);
         camera.update();
-        game.getBatch().setProjectionMatrix(camera.combined);
 
+        game.getBatch().setProjectionMatrix(camera.combined);
         game.getBatch().begin();
+
         font.draw(game.getBatch(), "HighScore: " + GameManager.getInstance().getHighscore(), 5, 475);
         font.draw(game.getBatch(), "Tormenta: " + GameManager.getInstance().getContadorTormenta() + " / 3", 600, 475);
         font.draw(game.getBatch(), "Gotas: " + GameManager.getInstance().getPuntos(), 5, 40);
@@ -134,7 +139,32 @@ public class GameScreen implements Screen {
                     camera.viewportHeight / 2f - texTrueno.getHeight() / 2f
             );
         }
+
         game.getBatch().end();
+
+        if (debugHitbox) {
+            shapeRenderer.setProjectionMatrix(camera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+
+            Polygon p = tarro.getPolyBoca();
+            if (p != null) {
+                shapeRenderer.setColor(0, 1, 0, 1);
+                shapeRenderer.polygon(p.getTransformedVertices());
+            }
+
+            for (ObjetoCayendo o : lluvia.getObjetos()) {
+                if (o.usaPoligono()) {
+                    shapeRenderer.setColor(1, 0, 0, 1);
+                    shapeRenderer.polygon(o.getHitPolygonWorld().getTransformedVertices());
+                } else {
+                    shapeRenderer.setColor(0, 0, 1, 1);
+                    Circle c = o.getHitCircle();
+                    shapeRenderer.circle(c.x, c.y, c.radius);
+                }
+            }
+
+            shapeRenderer.end();
+        }
     }
 
     @Override public void show()   { lluvia.continuar(); }
@@ -149,10 +179,10 @@ public class GameScreen implements Screen {
     @Override
     public void dispose() {
         try { sndTrueno.stop(); } catch (Exception ignored) {}
-        try { sndHurt.stop(); }   catch (Exception ignored) {}
-        try { sndDrop.stop(); }   catch (Exception ignored) {}
-        try { sndVida.stop(); }   catch (Exception ignored) {}
-        try { sndPowerup.stop(); }catch (Exception ignored) {}
+        try { sndHurt.stop(); } catch (Exception ignored) {}
+        try { sndDrop.stop(); } catch (Exception ignored) {}
+        try { sndVida.stop(); } catch (Exception ignored) {}
+        try { sndPowerup.stop(); } catch (Exception ignored) {}
         try { rainMusic.stop(); } catch (Exception ignored) {}
         GameManager.getInstance().getAudioBus().stopAll();
 
@@ -178,5 +208,6 @@ public class GameScreen implements Screen {
         windMusic.dispose();
 
         if (font != null) font.dispose();
+        if (shapeRenderer != null) shapeRenderer.dispose();
     }
 }

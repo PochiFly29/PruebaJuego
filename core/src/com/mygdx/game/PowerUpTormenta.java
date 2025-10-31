@@ -4,26 +4,17 @@ import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Rectangle;
 import com.mygdx.game.iescenario.EscenarioTorrencial;
-import com.mygdx.game.imovimiento.IComportamientoMovimiento;
+import com.mygdx.game.imovimiento.IMovimientos;
 
 public class PowerUpTormenta extends ObjetoCayendo {
 
     private final Sound sfx;
     private final Lluvia lluvia;
 
-    public PowerUpTormenta(Lluvia lluvia, Texture textura, Rectangle hitbox,IComportamientoMovimiento movimiento,Sound sound) {
+    public PowerUpTormenta(Lluvia lluvia, Texture textura, Rectangle hitbox, IMovimientos movimiento, Sound sound) {
         super(textura, hitbox, movimiento);
         this.sfx = sound;
         this.lluvia = lluvia;
-    }
-
-    public PowerUpTormenta(Texture textura,
-                           Rectangle hitbox,
-                           IComportamientoMovimiento movimiento,
-                           Sound sound) {
-        super(textura, hitbox, movimiento);
-        this.sfx = sound;
-        this.lluvia = null;
     }
 
     @Override

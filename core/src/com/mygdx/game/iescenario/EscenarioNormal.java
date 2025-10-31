@@ -4,7 +4,7 @@ import com.badlogic.gdx.utils.TimeUtils;
 import com.mygdx.game.Lluvia;
 import com.mygdx.game.Tarro;
 
-public class EscenarioNormal implements EscenarioStrat {
+public class EscenarioNormal implements IEscenarios {
     private static final long INTERVALO = 100_000_000L; // 0.10s
     private long last;
 
@@ -17,7 +17,6 @@ public class EscenarioNormal implements EscenarioStrat {
     @Override
     public void update(Lluvia ctx, Tarro tarro, float dt) {
         if (TimeUtils.nanoTime() - last > INTERVALO) {
-            // Probabilidades “normales” (70/27/2/1) que ya define Lluvia
             ctx.spawnAhora(ctx.elegirTipoNormal());
             last = TimeUtils.nanoTime();
         }

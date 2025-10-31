@@ -5,9 +5,10 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Polygon;
 import com.badlogic.gdx.math.Rectangle;
-
 
 public class Tarro {
     private Rectangle bucket;
@@ -17,8 +18,8 @@ public class Tarro {
     private boolean herido = false;
     private int tiempoHeridoMax = 50;
     private int tiempoHerido;
-
     private Texture escudoImage;
+    private Polygon polyBoca;
 
     public Tarro(Texture tex, Sound ss) {
         bucketImage = tex;
@@ -33,16 +34,21 @@ public class Tarro {
         return bucket;
     }
 
+    public Rectangle getAABB() {
+        return bucket;
+    }
+
     public void crear() {
         bucket = new Rectangle();
-        bucket.x = 800 / 2 - 64 / 2;
+        bucket.x = 800 / 2f - 64 / 2f;
         bucket.y = 20;
         bucket.width = 64;
         bucket.height = 64;
+        defineBocaPoligonal();
+        syncHitboxes();
     }
 
     public void dañar() {
-        // Llama al Singleton para la lógica de vidas
         GameManager.getInstance().perderVida();
         herido = true;
         tiempoHerido = tiempoHeridoMax;
@@ -58,9 +64,7 @@ public class Tarro {
             if (tiempoHerido <= 0)
                 herido = false;
         }
-        // Dibujar el escudo encima si está activo todo
         if (GameManager.getInstance().isEscudoActivo() && escudoImage != null) {
-            // Dibujar centrado en el tarro, quizás un poco más grande
             batch.draw(escudoImage, bucket.x - 8, bucket.y - 8, 80, 80);
         }
     }
@@ -70,16 +74,58 @@ public class Tarro {
             bucket.x -= velx * Gdx.graphics.getDeltaTime();
         if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
             bucket.x += velx * Gdx.graphics.getDeltaTime();
-
         if (bucket.x < 0) bucket.x = 0;
         if (bucket.x > 800 - 64) bucket.x = 800 - 64;
+        syncHitboxes();
     }
 
     public void destruir() {
         bucketImage.dispose();
     }
 
+    public Polygon getPolyBoca() {
+        return polyBoca;
+    }
+
     public boolean estaHerido() {
         return herido;
+    }
+
+    public boolean colisionaCon(ObjetoCayendo o) {
+        if (o.usaPoligono()) {
+            return Intersector.overlapConvexPolygons(polyBoca, o.getHitPolygonWorld());
+        } else {
+            Polygon p = circleToPolygon(o.getHitCircle().x, o.getHitCircle().y, o.getHitCircle().radius, 14);
+            return Intersector.overlapConvexPolygons(polyBoca, p);
+        }
+    }
+
+    private void defineBocaPoligonal() {
+        float w = bucket.width, h = bucket.height;
+        float[] verts = new float[] {
+                0.10f * w, 0.75f * h,
+                0.90f * w, 0.75f * h,
+                0.80f * w, 0.20f * h,
+                0.20f * w, 0.20f * h
+        };
+        polyBoca = new Polygon(verts);
+        polyBoca.setOrigin(0, 0);
+        polyBoca.setPosition(bucket.x, bucket.y);
+    }
+
+    private void syncHitboxes() {
+        if (polyBoca != null) {
+            polyBoca.setPosition(bucket.x, bucket.y);
+        }
+    }
+
+    private static Polygon circleToPolygon(float cx, float cy, float r, int segments) {
+        float[] v = new float[segments * 2];
+        for (int i = 0; i < segments; i++) {
+            float a = (float) (i * Math.PI * 2 / segments);
+            v[2 * i]     = cx + r * (float) Math.cos(a);
+            v[2 * i + 1] = cy + r * (float) Math.sin(a);
+        }
+        return new Polygon(v);
     }
 }

@@ -3,13 +3,13 @@ package com.mygdx.game;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Rectangle;
-import com.mygdx.game.imovimiento.IComportamientoMovimiento;
+import com.mygdx.game.imovimiento.IMovimientos;
 
 public class VidaExtra extends ObjetoCayendo {
 
     private final Sound lifeSound;
 
-    public VidaExtra(Texture textura, Rectangle hitbox, IComportamientoMovimiento movimiento, Sound lifeSound) {
+    public VidaExtra(Texture textura, Rectangle hitbox, IMovimientos movimiento, Sound lifeSound) {
         super(textura, hitbox, movimiento);
         this.lifeSound = lifeSound;
     }

@@ -2,10 +2,10 @@ package com.mygdx.game.imovimiento;
 
 import com.mygdx.game.ObjetoCayendo;
 
-public interface IComportamientoMovimiento {
+public interface IMovimientos {
     void mover(ObjetoCayendo obj, float dt);
 
-    IComportamientoMovimiento crearNueva();
+    IMovimientos crearNueva();
     void initApariencia(ObjetoCayendo obj);
     void onStart();
     void onStop();

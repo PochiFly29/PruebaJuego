@@ -3,7 +3,7 @@ package com.mygdx.game.imovimiento;
 import com.mygdx.game.ObjetoCayendo;
 import com.mygdx.game.GameManager;
 
-public class MovimientoDiagonal implements IComportamientoMovimiento {
+public class MovimientoDiagonal implements IMovimientos {
     private final float velY, velX, rotDeg;
 
     public MovimientoDiagonal(float velY, float velX, float rotDeg) {
@@ -30,7 +30,7 @@ public class MovimientoDiagonal implements IComportamientoMovimiento {
     @Override public float getVelocidadVertical() { return velY; }
 
     @Override
-    public IComportamientoMovimiento crearNueva() {
+    public IMovimientos crearNueva() {
         return new MovimientoDiagonal(velY, velX, rotDeg);
     }
 }

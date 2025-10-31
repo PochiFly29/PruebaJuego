@@ -8,13 +8,13 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.TimeUtils;
-import com.mygdx.game.iescenario.EscenarioStrat;
+import com.mygdx.game.iescenario.IEscenarios;
 import com.mygdx.game.iescenario.EscenarioNormal;
 
 import java.util.EnumMap;
 import java.util.Map;
 
-import com.mygdx.game.imovimiento.IComportamientoMovimiento;
+import com.mygdx.game.imovimiento.IMovimientos;
 
 public class Lluvia {
 
@@ -24,14 +24,14 @@ public class Lluvia {
 
     // Reemplazo de BiFunction<Rectangle, IComportamientoMovimiento, ObjetoCayendo> para Java 7
     private interface Fabrica {
-        ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov);
+        ObjetoCayendo crear(Rectangle hb, IMovimientos mov);
     }
 
     private final Array<ObjetoCayendo> objetos = new Array<ObjetoCayendo>();
     private long lastDropTime;
 
     // Escenario activo
-    private EscenarioStrat escenario;
+    private IEscenarios escenario;
 
     // Assets
     private final Texture texBuena, texMala, texVida, texEscudo, texIman, texTormenta;
@@ -58,6 +58,10 @@ public class Lluvia {
     // Registro de fábricas
     private final Map<TipoSpawn, Fabrica> fabrica = new EnumMap<TipoSpawn, Fabrica>(TipoSpawn.class);
 
+    public Iterable<ObjetoCayendo> getObjetos() {
+        return objetos;
+    }
+
     public Lluvia(Texture gotaBuena, Texture gotaMala, Texture vidaExtra,
                   Texture texEscudo, Texture texIman, final Texture texTormenta,
                   com.badlogic.gdx.audio.Sound dropSound, com.badlogic.gdx.audio.Sound lifeSound, com.badlogic.gdx.audio.Sound powerupSound,
@@ -74,39 +78,37 @@ public class Lluvia {
         this.sndPowerup = powerupSound;
         this.rainMusic = rainMusic;
 
-        // Clases anónimas: referenciar campos con Lluvia.this.<campo> para evitar el warning de “final”
         fabrica.put(TipoSpawn.BUENA, new Fabrica() {
-            public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
+            public ObjetoCayendo crear(Rectangle hb, IMovimientos mov) {
                 return new GotaBuena(Lluvia.this.texBuena, hb, mov, Lluvia.this.sndDrop);
             }
         });
         fabrica.put(TipoSpawn.MALA, new Fabrica() {
-            public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
+            public ObjetoCayendo crear(Rectangle hb, IMovimientos mov) {
                 return new GotaMala(Lluvia.this.texMala, hb, mov);
             }
         });
         fabrica.put(TipoSpawn.VIDA, new Fabrica() {
-            public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
+            public ObjetoCayendo crear(Rectangle hb, IMovimientos mov) {
                 return new VidaExtra(Lluvia.this.texVida, hb, mov, Lluvia.this.sndVida);
             }
         });
         fabrica.put(TipoSpawn.ESCUDO, new Fabrica() {
-            public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
+            public ObjetoCayendo crear(Rectangle hb, IMovimientos mov) {
                 return new PowerUpEscudo(Lluvia.this.texEscudo, hb, mov, Lluvia.this.sndPowerup);
             }
         });
         fabrica.put(TipoSpawn.IMAN, new Fabrica() {
-            public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
+            public ObjetoCayendo crear(Rectangle hb, IMovimientos mov) {
                 return new PowerUpIman(Lluvia.this.texIman, hb, mov, Lluvia.this.sndPowerup);
             }
         });
         fabrica.put(TipoSpawn.TORMENTA, new Fabrica() {
-            public ObjetoCayendo crear(Rectangle hb, IComportamientoMovimiento mov) {
+            public ObjetoCayendo crear(Rectangle hb, IMovimientos mov) {
                 return new PowerUpTormenta(Lluvia.this, texTormenta, hb, mov, sndPowerup);
             }
         });
 
-        // Por defecto, arrancamos con escenario normal
         this.escenario = new EscenarioNormal();
         this.escenario.init(this);
     }
@@ -161,7 +163,7 @@ public class Lluvia {
     public void destruir()  { rainMusic.dispose(); }
 
     // ---------- API para escenarios ----------
-    public void setEscenario(EscenarioStrat nuevo) {
+    public void setEscenario(IEscenarios nuevo) {
         this.escenario = nuevo;
         if (this.escenario != null) this.escenario.init(this);
     }
@@ -173,10 +175,10 @@ public class Lluvia {
     public void spawnAhora(TipoSpawn tipo) {
         GameManager gm = GameManager.getInstance();
 
-        IComportamientoMovimiento base = (tipo == TipoSpawn.BUENA || tipo == TipoSpawn.MALA)
+        IMovimientos base = (tipo == TipoSpawn.BUENA || tipo == TipoSpawn.MALA)
                 ? gm.getMovimientoParaGota()
                 : gm.getMovimientoParaPowerup();
-        IComportamientoMovimiento mov = base.crearNueva();
+        IMovimientos mov = base.crearNueva();
 
         float velY   = Math.max(1e-6f, mov.getVelocidadVertical());
         float deriva = mov.getDerivaHorizontal(pantallaAlto, velY);
@@ -196,7 +198,6 @@ public class Lluvia {
         spawnAhora(TipoSpawn.BUENA);
     }
 
-    // Helper público por si un Escenario quiere probabilidades normales
     public TipoSpawn elegirTipoNormal() {
         return elegirTipo(false);
     }
