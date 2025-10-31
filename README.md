@@ -23,6 +23,30 @@ Proyecto desarrollado en **Java**, utilizando **LibGDX** y **Gradle**
 
 2. Hacer clic derecho → **Run "Lwjgl3Launcher"**
 
+El juego iniciará en una ventana de **800×480**.
+
 ---
 
-El juego iniciará en una ventana de **800×480**.
+## Mecánicas y funciones del juego
+
+### Controles
+
+Flechas izquierda o derecha: Mover el tarro
+
+**ESC**: Pausar/reanudar el juego
+
+**F3**: Mostrar/ocultar visualización de hitbox (colisiones)
+
+---
+
+### Eventos
+
+El juego aumenta su dificultad en función del puntaje y de los power-ups obtenidos:
+
+**Etapa 2 — 1000 puntos**: Aumenta velocidad de caída + las gotas buenas/malas caen con patrón **diagonal**
+
+**Etapa 3 — 2500 puntos**: Cae lluvia en patrón **diagonal + serpentenante para otros objetos**
+
+**Escenario Bonus Tormenta** (Al recolectar **3 power-ups Tormenta**): **lluvia torrencial solo de gotas buenas**, puntaje rápido asegurado por tiempo limitado
+
+---
