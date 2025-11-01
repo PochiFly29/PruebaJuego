@@ -37,6 +37,8 @@ Flechas izquierda o derecha: Mover el tarro
 
 **F3**: Mostrar/ocultar visualización de hitbox (colisiones)
 
+**R**: Reiniciado rapido
+
 ---
 
 ### Eventos
