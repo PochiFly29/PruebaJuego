@@ -24,7 +24,7 @@ public class GameScreen implements Screen {
     private boolean debugHitbox = false;
     private ShapeRenderer shapeRenderer;
 
-    private Texture texTarro, texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta, texTrueno;
+    private Texture texTarro, texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta, texTrueno, imgFondo;
     private Sound sndHurt, sndDrop, sndVida, sndPowerup, sndTrueno;
     private Music rainMusic, windMusic;
 
@@ -41,6 +41,7 @@ public class GameScreen implements Screen {
 
         shapeRenderer = new ShapeRenderer();
 
+        imgFondo = new Texture(Gdx.files.internal("fondo.png"));
         texTarro = new Texture(Gdx.files.internal("bucket.png"));
         texGotaBuena = new Texture(Gdx.files.internal("drop.png"));
         texGotaMala = new Texture(Gdx.files.internal("dropBad.png"));
@@ -50,9 +51,9 @@ public class GameScreen implements Screen {
         texTormenta = new Texture(Gdx.files.internal("storm_pickup.png"));
         texTrueno = new Texture(Gdx.files.internal("trueno.png"));
 
-        setLinear(texTarro, texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta, texTrueno);
+        setLinear(texTarro, texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta, texTrueno, imgFondo);
 
-        sndHurt = Gdx.audio.newSound(Gdx.files.internal("hurt.ogg"));
+        sndHurt = Gdx.audio.newSound(Gdx.files.internal("hurt.mp3"));
         sndDrop = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
         sndVida = Gdx.audio.newSound(Gdx.files.internal("life.wav"));
         sndPowerup = Gdx.audio.newSound(Gdx.files.internal("powerup.wav"));
@@ -65,7 +66,7 @@ public class GameScreen implements Screen {
         tarro = new Tarro(texTarro, sndHurt);
         tarro.setEscudoTexture(texEscudo);
 
-        lluvia = new Lluvia( texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta,sndDrop, sndVida, sndPowerup, rainMusic);
+        lluvia = new Lluvia(texGotaBuena, texGotaMala, texVidaExtra,texEscudo, texIman, texTormenta,sndDrop, sndVida, sndPowerup, rainMusic);
 
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 800, 480);
@@ -116,6 +117,9 @@ public class GameScreen implements Screen {
         game.getBatch().setProjectionMatrix(camera.combined);
 
         game.getBatch().begin();
+
+        game.getBatch().draw(imgFondo, 0, 0, 800, 480);
+
         font.draw(game.getBatch(), "HighScore: " + GameManager.getInstance().getHighscore(), 5, 475);
         font.draw(game.getBatch(), "Tormenta: " + GameManager.getInstance().getContadorTormenta() + " / 3", 600, 475);
         font.draw(game.getBatch(), "Gotas: " + GameManager.getInstance().getPuntos(), 5, 40);
@@ -125,7 +129,11 @@ public class GameScreen implements Screen {
         lluvia.actualizarDibujoLluvia(game.getBatch());
 
         if (GameManager.getInstance().estaEnPausaDeTransicion()) {
-            game.getBatch().draw(texTrueno,camera.viewportWidth / 2f - texTrueno.getWidth() / 2f,camera.viewportHeight / 2f - texTrueno.getHeight() / 2f);
+            game.getBatch().draw(
+                    texTrueno,
+                    camera.viewportWidth / 2f - texTrueno.getWidth() / 2f,
+                    camera.viewportHeight / 2f - texTrueno.getHeight() / 2f
+            );
         }
         game.getBatch().end();
 
@@ -177,6 +185,7 @@ public class GameScreen implements Screen {
         texIman.dispose();
         texTormenta.dispose();
         texTrueno.dispose();
+        imgFondo.dispose();
 
         sndHurt.dispose();
         sndDrop.dispose();

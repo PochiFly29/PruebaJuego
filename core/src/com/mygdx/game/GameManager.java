@@ -97,12 +97,12 @@ public class GameManager {
 
     private boolean vientoALaDerecha = true;
 
-    private final IMovimientos movRecto_Lento = new MovimientoVertical(200f);
-    private final IMovimientos movRecto_Normal = new MovimientoVertical(300f);
+    private final IMovimientos movRecto_Lento = new MovimientoVertical(300f);
+    private final IMovimientos movRecto_Normal = new MovimientoVertical(400f);
     private final IMovimientos movRecto_Rapido = new MovimientoVertical(450f);
-    private final IMovimientos movDiag_Derecha = new MovimientoDiagonal(400f,  150f,  25f);
-    private final IMovimientos movDiag_Izquierda = new MovimientoDiagonal(400f, -150f, -25f);
-    private final IMovimientos movSerpiente = new MovimientoSerpenteante(300f, 50f, 3f);
+    private final IMovimientos movDiag_Derecha = new MovimientoDiagonal(550f,  150f,  25f);
+    private final IMovimientos movDiag_Izquierda = new MovimientoDiagonal(550f, -150f, -25f);
+    private final IMovimientos movSerpiente = new MovimientoSerpenteante(450f, 80f, 7f);
     private final IMovimientos movTormenta  = new MovimientoVertical(700f);
 
     private interface Politica { IMovimientos get(); }
@@ -138,7 +138,7 @@ public class GameManager {
                 return (vientoALaDerecha ? movDiag_Derecha : movDiag_Izquierda);
             }
         });
-        addPolitica(politicaGotas, EstadoJuego.TORMENTA_ESPECIAL,   movTormenta);
+        addPolitica(politicaGotas, EstadoJuego.TORMENTA_ESPECIAL, movTormenta);
         addPolitica(politicaGotas, EstadoJuego.PAUSA_POST_TORMENTA, movRecto_Normal);
 
         addPolitica(politicaPowerups, EstadoJuego.ETAPA_1, movRecto_Lento);

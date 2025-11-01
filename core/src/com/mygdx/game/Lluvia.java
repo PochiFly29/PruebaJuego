@@ -42,8 +42,7 @@ public class Lluvia {
 
     private float pBuena = 0.70f;
     private float pMala  = 0.27f;
-    private float pVida  = 0.02f;
-    private float pRaras = 0.01f;
+    private float pVida  = 0.01f;
 
     private float pEscudo = 1f/3f, pIman = 1f/3f, pTormenta = 1f/3f;
 
@@ -107,7 +106,8 @@ public class Lluvia {
     public Lluvia setDimensionesPantalla(float w, float h) { this.pantallaAncho = w; this.pantallaAlto = h; return this; }
     public Lluvia setTimers(long normalNs, long tormentaNs) { this.spawnNormalNs = normalNs; this.spawnTormentaNs = tormentaNs; return this; }
     public Lluvia setProbabilidades(float pBuena, float pMala, float pVida, float pRaras) {
-        this.pBuena = pBuena; this.pMala = pMala; this.pVida = pVida; this.pRaras = pRaras; return this;
+        this.pBuena = pBuena; this.pMala = pMala; this.pVida = pVida;
+        return this;
     }
     public Lluvia setRarasDistrib(float pEscudo, float pIman, float pTormenta) {
         this.pEscudo = pEscudo; this.pIman = pIman; this.pTormenta = pTormenta; return this;
@@ -203,10 +203,19 @@ public class Lluvia {
     private TipoSpawn elegirTipo(boolean enTormenta) {
         if (soloBuenas || enTormenta) return TipoSpawn.BUENA;
 
+        float pVidaActual = this.pVida;
+        switch (GameManager.getInstance().getEstadoActual()) {
+            case ETAPA_1:
+                pVidaActual = 0.005f; // menos vidas en nivel 1
+                break;
+            default:
+                pVidaActual = this.pVida;
+        }
+
         float r = MathUtils.random();
         float tBuena = pBuena;
         float tMala  = tBuena + pMala;
-        float tVida  = tMala  + pVida;
+        float tVida  = tMala  + pVidaActual;
 
         if (r < tBuena)  return TipoSpawn.BUENA;
         if (r < tMala)   return TipoSpawn.MALA;
