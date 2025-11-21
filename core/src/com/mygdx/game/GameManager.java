@@ -13,8 +13,31 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class GameManager {
+    // =================================================================
+    // IMPLEMENTACIÓN DEL PATRÓN SINGLETON
+    // =================================================================
 
+    /**
+     * 1. Variable Estática Privada:
+     * Almacena la única instancia que existirá en toda la ejecución.
+     */
     private static GameManager instancia;
+
+    /**
+     * 2. Constructor Privado:
+     * Es PRIVADO para impedir que otras clases hagan 'new GameManager()'.
+     */
+    private GameManager() {
+        Preferences prefs = Gdx.app.getPreferences(PREFS_NAME);
+        this.highscore = prefs.getInteger(PREF_HIGHSCORE, 0);
+        configurarPoliticas();
+        resetJuego();
+    }
+
+    /**
+     * 3. Metodo de Acceso Global (Punto de Entrada):
+     * Retorna la instancia única. Si no existe, la crea.
+     */
     public static GameManager getInstance() {
         if (instancia == null) instancia = new GameManager();
         return instancia;
@@ -113,13 +136,6 @@ public class GameManager {
     private static final String PREF_HIGHSCORE = "highscore";
 
     private IMovimientos movGotaPrevioATormenta;
-
-    private GameManager() {
-        Preferences prefs = Gdx.app.getPreferences(PREFS_NAME);
-        this.highscore = prefs.getInteger(PREF_HIGHSCORE, 0);
-        configurarPoliticas();
-        resetJuego();
-    }
 
     private void addPolitica(Map<EstadoJuego, Politica> mapa, EstadoJuego estado, final IMovimientos mov) {
         mapa.put(estado, new Politica() {
