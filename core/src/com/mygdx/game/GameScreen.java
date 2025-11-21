@@ -29,13 +29,17 @@ public class GameScreen implements Screen {
     private boolean debugHitbox = false;
     private ShapeRenderer shapeRenderer;
 
+    // Lluvia de fondo
+    private Texture rainOverlay;
+    private float rainOffset = 0f;
+
     // Texturas
     private Texture texTarro, texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta, texTrueno, imgFondo;
     // Sonidos
     private Sound sndHurt, sndDrop, sndVida, sndPowerup, sndTrueno;
     private Music rainMusic, windMusic;
 
-    // Trueno con parpadeo
+    // Trueno
     private boolean truenoActivo = false;
     private float truenoTimer = 0f;
     private static final float TRUENO_DURACION = 0.25f; // 250 ms
@@ -43,7 +47,7 @@ public class GameScreen implements Screen {
     public GameScreen(final GameLluviaMenu game) {
         this.game = game;
 
-        // ----- FUENTES -----
+        // Fuentes
         FreeTypeFontGenerator gen = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Roboto.ttf"));
 
         // HUD
@@ -53,12 +57,12 @@ public class GameScreen implements Screen {
         pHUD.magFilter = Texture.TextureFilter.Linear;
         this.fontHUD = gen.generateFont(pHUD);
 
-        // Título de pausa
+        // Titulo de pausa
         FreeTypeFontGenerator.FreeTypeFontParameter pTitulo = new FreeTypeFontGenerator.FreeTypeFontParameter();
         pTitulo.size = 60;
         BitmapFont fontTitulo = gen.generateFont(pTitulo);
 
-        // Subtítulo de pausa
+        // Subtitulo de pausa
         FreeTypeFontGenerator.FreeTypeFontParameter pSub = new FreeTypeFontGenerator.FreeTypeFontParameter();
         pSub.size = 22;
         BitmapFont fontSubtitulo = gen.generateFont(pSub);
@@ -69,7 +73,7 @@ public class GameScreen implements Screen {
 
         shapeRenderer = new ShapeRenderer();
 
-        // ----- TEXTURAS -----
+        // Texturas
         imgFondo = new Texture(Gdx.files.internal("fondo.png"));
         texTarro = new Texture(Gdx.files.internal("bucket.png"));
         texGotaBuena = new Texture(Gdx.files.internal("drop.png"));
@@ -82,7 +86,11 @@ public class GameScreen implements Screen {
 
         setLinear(texTarro, texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta, texTrueno, imgFondo);
 
-        // ----- SONIDOS -----
+        // Lluvia de fondo
+        rainOverlay = new Texture(Gdx.files.internal("rainOverlay.png"));
+        rainOverlay.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+
+        // Sonidos
         sndHurt = Gdx.audio.newSound(Gdx.files.internal("hurt.mp3"));
         sndDrop = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
         sndVida = Gdx.audio.newSound(Gdx.files.internal("life.wav"));
@@ -93,15 +101,10 @@ public class GameScreen implements Screen {
 
         GameManager.getInstance().setWindMusic(windMusic);
 
-        // ----- ENTIDADES -----
         tarro = new Tarro(texTarro, sndHurt);
         tarro.setEscudoTexture(texEscudo);
 
-        lluvia = new Lluvia(
-                texGotaBuena, texGotaMala, texVidaExtra,
-                texEscudo, texIman, texTormenta,
-                sndDrop, sndVida, sndPowerup, rainMusic
-        );
+        lluvia = new Lluvia(texGotaBuena, texGotaMala, texVidaExtra,texEscudo, texIman, texTormenta,sndDrop, sndVida, sndPowerup, rainMusic);
 
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 800, 480);
@@ -120,9 +123,6 @@ public class GameScreen implements Screen {
     @Override
     public void render(float delta) {
 
-        // ---- INPUT QUE SIEMPRE FUNCIONA ----
-
-        // ESC → Pausa / Reanudar
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             boolean estabaActiva = pausaScreen.isActivo();
             pausaScreen.toggle();
@@ -130,12 +130,10 @@ public class GameScreen implements Screen {
             GameManager gm = GameManager.getInstance();
 
             if (!estabaActiva) {
-                // Entrando en pausa
-                lluvia.pausar();              // detiene rain.mp3
-                gm.getAudioBus().stopAll();   // detiene viento y otros Music del bus
+                lluvia.pausar();
+                gm.getAudioBus().stopAll();
             } else {
-                // Saliendo de pausa
-                lluvia.continuar();           // reanuda rain.mp3
+                lluvia.continuar();
 
                 GameManager.EstadoJuego estado = gm.getEstadoActual();
                 if (estado == GameManager.EstadoJuego.ETAPA_2 ||
@@ -145,19 +143,16 @@ public class GameScreen implements Screen {
             }
         }
 
-        // R → Reiniciar juego SIEMPRE
         if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             game.setScreen(new GameScreen(game));
             dispose();
             return;
         }
 
-        // F3 → Toggle debug hitbox SIEMPRE
         if (Gdx.input.isKeyJustPressed(Input.Keys.F3)) {
             debugHitbox = !debugHitbox;
         }
 
-        // ---- UPDATE SOLO SI NO ESTÁ EN PAUSA ----
         if (!pausaScreen.isActivo()) {
             GameManager.getInstance().update(delta);
 
@@ -167,7 +162,7 @@ public class GameScreen implements Screen {
             lluvia.actualizarMovimiento(tarro);
         }
 
-        // GAME OVER (solo si no está en pausa)
+        // GAME OVER
         if (GameManager.getInstance().getVidas() <= 0 && !pausaScreen.isActivo()) {
             GameManager.getInstance().actualizarHighscore();
             game.setScreen(new GameOverScreen(game));
@@ -175,15 +170,29 @@ public class GameScreen implements Screen {
             return;
         }
 
-        // ---- DIBUJO ----
         ScreenUtils.clear(0, 0, 0.2f, 1);
         camera.update();
         game.getBatch().setProjectionMatrix(camera.combined);
 
         game.getBatch().begin();
 
+        // LLUVIA DE FONDO
+        if (!pausaScreen.isActivo()) {
+            rainOffset += delta * 500; // velocidad
+        }
+
         // Fondo
         game.getBatch().draw(imgFondo, 0, 0, 800, 480);
+
+        game.getBatch().setColor(1f, 1f, 1f, 0.35f);
+
+        float offsetMod = rainOffset % 480f;
+
+        game.getBatch().draw(rainOverlay, 0, -offsetMod, 800, 480);
+        game.getBatch().draw(rainOverlay, 0, 480 - offsetMod, 800, 480);
+
+        game.getBatch().setColor(1f, 1f, 1f, 1f);
+
 
         // HUD
         fontHUD.draw(game.getBatch(), "HighScore: " + GameManager.getInstance().getHighscore(), 5, 475);
@@ -195,7 +204,7 @@ public class GameScreen implements Screen {
         tarro.dibujar(game.getBatch());
         lluvia.actualizarDibujoLluvia(game.getBatch());
 
-        // ---- TRUENO: disparo + parpadeo ----
+        // Trueno
         if (GameManager.getInstance().debeMostrarTrueno()) {
             sndTrueno.play();
             truenoActivo = true;
@@ -220,12 +229,12 @@ public class GameScreen implements Screen {
             }
         }
 
-        // Overlay de pausa (encima de todo lo anterior)
+        // Overlay de pausa
         pausaScreen.render(game.getBatch(), camera);
 
         game.getBatch().end();
 
-        // ---- DEBUG HITBOX (F3) ----
+        // Ver Hitbox de objetos (F3)
         if (debugHitbox) {
             shapeRenderer.setProjectionMatrix(camera.combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
