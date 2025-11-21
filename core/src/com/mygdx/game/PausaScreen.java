@@ -47,7 +47,7 @@ public class PausaScreen {
         batch.draw(overlayVHS, 0, 0, w, h);
         batch.setColor(1f, 1f, 1f, 1f);
 
-        fontTitulo.draw(batch, "PAUSA", w * 0.67f, h * 0.89f);
+        fontTitulo.draw(batch, "PAUSA", w * 0.66f, h * 0.89f);
         fontSubtitulo.draw(batch, "[ESC] PARA CONTINUAR", w * 0.66f, h * 0.76f);
     }
 

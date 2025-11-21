@@ -36,8 +36,10 @@ public class GameScreen implements Screen {
     // Texturas
     private Texture texTarro, texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta, texTrueno, imgFondo;
     // Sonidos
-    private Sound sndHurt, sndDrop, sndVida, sndPowerup, sndTrueno;
+    private Sound sndHurt, sndDrop, sndVida, sndPowerup, sndTrueno, sndImanLoop;
     private Music rainMusic, windMusic;
+    private long imanLoopId = -1L;
+    private boolean imanPrevActivo = false;
 
     // Trueno
     private boolean truenoActivo = false;
@@ -64,7 +66,7 @@ public class GameScreen implements Screen {
 
         // Subtitulo de pausa
         FreeTypeFontGenerator.FreeTypeFontParameter pSub = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        pSub.size = 22;
+        pSub.size = 21;
         BitmapFont fontSubtitulo = gen.generateFont(pSub);
 
         gen.dispose();
@@ -98,11 +100,13 @@ public class GameScreen implements Screen {
         sndTrueno = Gdx.audio.newSound(Gdx.files.internal("trueno.wav"));
         rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
         windMusic = Gdx.audio.newMusic(Gdx.files.internal("wind.mp3"));
+        sndImanLoop = Gdx.audio.newSound(Gdx.files.internal("magnet.mp3"));
 
         GameManager.getInstance().setWindMusic(windMusic);
 
         tarro = new Tarro(texTarro, sndHurt);
         tarro.setEscudoTexture(texEscudo);
+        tarro.setImanTexture(texIman);
 
         lluvia = new Lluvia(texGotaBuena, texGotaMala, texVidaExtra,texEscudo, texIman, texTormenta,sndDrop, sndVida, sndPowerup, rainMusic);
 
@@ -132,13 +136,21 @@ public class GameScreen implements Screen {
             if (!estabaActiva) {
                 lluvia.pausar();
                 gm.getAudioBus().stopAll();
+
+                if (imanLoopId != -1L) {
+                    sndImanLoop.stop(imanLoopId);
+                    imanLoopId = -1L;
+                }
             } else {
                 lluvia.continuar();
 
                 GameManager.EstadoJuego estado = gm.getEstadoActual();
-                if (estado == GameManager.EstadoJuego.ETAPA_2 ||
-                        estado == GameManager.EstadoJuego.ETAPA_3) {
-                    gm.startWind();          // vuelve a encender viento si corresponde
+                if (estado == GameManager.EstadoJuego.ETAPA_2 || estado == GameManager.EstadoJuego.ETAPA_3) {
+                    gm.startWind();
+                }
+
+                if (gm.isImanActivo() && imanLoopId == -1L) {
+                    imanLoopId = sndImanLoop.loop(0.7f);
                 }
             }
         }
@@ -161,6 +173,23 @@ public class GameScreen implements Screen {
             }
             lluvia.actualizarMovimiento(tarro);
         }
+
+        // Sonido del iman
+        GameManager gm = GameManager.getInstance();
+        boolean imanAhora = gm.isImanActivo();
+
+        if (imanAhora && !imanPrevActivo) {
+            imanLoopId = sndImanLoop.loop(0.5f); // volumen
+        }
+        if (!imanAhora && imanPrevActivo) {
+            if (imanLoopId != -1L) {
+                sndImanLoop.stop(imanLoopId);
+                imanLoopId = -1L;
+            } else {
+                sndImanLoop.stop();
+            }
+        }
+        imanPrevActivo = imanAhora;
 
         // GAME OVER
         if (GameManager.getInstance().getVidas() <= 0 && !pausaScreen.isActivo()) {
@@ -293,6 +322,8 @@ public class GameScreen implements Screen {
         sndTrueno.dispose();
         rainMusic.dispose();
         windMusic.dispose();
+        sndImanLoop.stop();
+        sndImanLoop.dispose();
 
         if (shapeRenderer != null) shapeRenderer.dispose();
     }

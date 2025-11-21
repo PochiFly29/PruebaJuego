@@ -2,9 +2,11 @@ package com.mygdx.game;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Polygon;
@@ -19,6 +21,9 @@ public class Tarro {
     private int tiempoHeridoMax = 50;
     private int tiempoHerido;
     private Texture escudoImage;
+
+    private Texture imanImage;
+
     private Polygon polyBoca;
 
     public Tarro(Texture tex, Sound ss) {
@@ -28,6 +33,10 @@ public class Tarro {
 
     public void setEscudoTexture(Texture tex) {
         this.escudoImage = tex;
+    }
+
+    public void setImanTexture(Texture tex) {
+        this.imanImage = tex;
     }
 
     public Rectangle getArea() {
@@ -64,8 +73,17 @@ public class Tarro {
             if (tiempoHerido <= 0)
                 herido = false;
         }
+
         if (GameManager.getInstance().isEscudoActivo() && escudoImage != null) {
             batch.draw(escudoImage, bucket.x - 8, bucket.y - 8, 80, 80);
+        }
+
+        if (GameManager.getInstance().isImanActivo() && imanImage != null) {
+            float imanWidth = 55f;
+            float imanHeight = 55f;
+            float x = bucket.x + bucket.width / 2f - imanWidth / 2f;
+            float y = bucket.y + bucket.height - 20f;
+            batch.draw(imanImage, x, y, imanWidth, imanHeight);
         }
     }
 
