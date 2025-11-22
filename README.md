@@ -6,7 +6,7 @@ Proyecto desarrollado en **Java**, utilizando **LibGDX** y **Gradle**
 ### 1. Instalación
 
 1. Descargar y descomprimir el archivo:  
-   `ProyectoLluvia(Avance).zip`
+   `GameLluvia (Recolecta Gotas).zip`
 
 2. Abrir un IDE de preferencia (Realizado en Intellij IDEA).
 
