@@ -36,7 +36,7 @@ public class GameScreen implements Screen {
     // Texturas
     private Texture texTarro, texGotaBuena, texGotaMala, texVidaExtra, texEscudo, texIman, texTormenta, texTrueno, imgFondo;
     // Sonidos
-    private Sound sndHurt, sndDrop, sndVida, sndPowerup, sndTrueno, sndImanLoop;
+    private Sound sndHurt, sndDrop, sndVida, sndPowerup, sndTrueno, sndImanLoop, sndDeath;
     private Music rainMusic, windMusic;
     private long imanLoopId = -1L;
     private boolean imanPrevActivo = false;
@@ -94,13 +94,14 @@ public class GameScreen implements Screen {
 
         // Sonidos
         sndHurt = Gdx.audio.newSound(Gdx.files.internal("hurt.mp3"));
-        sndDrop = Gdx.audio.newSound(Gdx.files.internal("drop.wav"));
+        sndDrop = Gdx.audio.newSound(Gdx.files.internal("drop.mp3"));
         sndVida = Gdx.audio.newSound(Gdx.files.internal("life.wav"));
         sndPowerup = Gdx.audio.newSound(Gdx.files.internal("powerup.wav"));
         sndTrueno = Gdx.audio.newSound(Gdx.files.internal("trueno.wav"));
         rainMusic = Gdx.audio.newMusic(Gdx.files.internal("rain.mp3"));
         windMusic = Gdx.audio.newMusic(Gdx.files.internal("wind.mp3"));
         sndImanLoop = Gdx.audio.newSound(Gdx.files.internal("magnet.mp3"));
+        sndDeath = Gdx.audio.newSound(Gdx.files.internal("death.mp3"));
 
         GameManager.getInstance().setWindMusic(windMusic);
 
@@ -194,6 +195,7 @@ public class GameScreen implements Screen {
         // GAME OVER
         if (GameManager.getInstance().getVidas() <= 0 && !pausaScreen.isActivo()) {
             GameManager.getInstance().actualizarHighscore();
+            sndDeath.play();
             game.setScreen(new GameOverScreen(game));
             dispose();
             return;
@@ -245,13 +247,13 @@ public class GameScreen implements Screen {
             if (truenoTimer <= 0f) {
                 truenoActivo = false;
             } else {
-                float intensidad = MathUtils.random(0.4f, 1f); // parpadeo tipo ruido
+                float intensidad = MathUtils.random(0.4f, 1f);
                 game.getBatch().setColor(1f, 1f, 1f, intensidad);
 
                 game.getBatch().draw(
                         texTrueno,
                         camera.viewportWidth / 2f - texTrueno.getWidth() / 2f,
-                        camera.viewportHeight / 2f - texTrueno.getHeight() / 2f
+                        camera.viewportHeight / 2f - texTrueno.getHeight() / 3f
                 );
 
                 game.getBatch().setColor(1f, 1f, 1f, 1f);

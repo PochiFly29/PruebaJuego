@@ -11,7 +11,6 @@ import com.mygdx.game.imovimiento.IMovimientos;
 public abstract class ObjetoCayendo {
 
     protected Rectangle hitbox;
-    // asdasdas
     protected Circle hitCircle;
     protected Polygon polyLocal;
     protected Polygon polyWorld;
@@ -33,11 +32,11 @@ public abstract class ObjetoCayendo {
     protected float circleScale = 0.35f;
 
     public ObjetoCayendo(Texture textura, Rectangle hitbox, IMovimientos movimiento) {
-        this.textura     = textura;
-        this.hitbox      = hitbox;
-        this.movimiento  = movimiento;
-        this.spawnX      = hitbox.x;
-        this.tiempoEnVida= 0f;
+        this.textura = textura;
+        this.hitbox = hitbox;
+        this.movimiento = movimiento;
+        this.spawnX = hitbox.x;
+        this.tiempoEnVida = 0f;
 
         refreshCircle();
 
@@ -80,14 +79,8 @@ public abstract class ObjetoCayendo {
         boolean imanActivo = GameManager.getInstance().isImanActivo();
 
         if (imanActivo && esAtraible()) {
-            Vector2 posTarro = new Vector2(
-                    tarro.getAABB().x + tarro.getAABB().width / 2f,
-                    tarro.getAABB().y
-            );
-            Vector2 posObj = new Vector2(
-                    hitbox.x + hitbox.width / 2f,
-                    hitbox.y
-            );
+            Vector2 posTarro = new Vector2(tarro.getAABB().x + tarro.getAABB().width / 2f, tarro.getAABB().y);
+            Vector2 posObj = new Vector2(hitbox.x + hitbox.width / 2f, hitbox.y);
             if (posTarro.dst(posObj) < DISTANCIA_IMAN_MAX) {
                 Vector2 dir = posTarro.sub(posObj).nor();
                 hitbox.x += dir.x * VELOCIDAD_IMAN * delta;
@@ -104,7 +97,6 @@ public abstract class ObjetoCayendo {
         hitCircle.setPosition(hitbox.x + hitbox.width/2f, hitbox.y + hitbox.height/2f);
         hitCircle.setRadius(circleScale * Math.min(hitbox.width, hitbox.height));
 
-        // polígono world desde local
         if (polyLocal != null) {
             if (polyWorld == null) {
                 polyWorld = new Polygon(polyLocal.getVertices().clone());
@@ -120,12 +112,6 @@ public abstract class ObjetoCayendo {
     protected void setCircleScale(float s) {
         this.circleScale = s;
         refreshCircle();
-    }
-
-    protected void setPolygonLocal(float[] vertsLocal) {
-        this.polyLocal = new Polygon(vertsLocal);
-        this.polyLocal.setOrigin(hitbox.width/2f, hitbox.height/2f);
-        syncTransforms();
     }
 
     private void refreshCircle() {
@@ -148,23 +134,13 @@ public abstract class ObjetoCayendo {
     }
 
     public Rectangle getHitbox() { return hitbox; }
-    public Rectangle getAABB()   { return hitbox; }
-    public Rectangle getArea()   { return hitbox; }
 
-    public Circle  getHitCircle()        { return hitCircle; }
+    public Circle  getHitCircle() { return hitCircle; }
     public Polygon getHitPolygonWorld()  { return polyWorld; }
-    public boolean usaPoligono()         { return polyLocal != null; }
+    public boolean usaPoligono() { return polyLocal != null; }
 
     public void setRotacion(float rotacion) { this.rotacion = rotacion; }
 
-    public void setComportamiento(IMovimientos movimiento) {
-        this.movimiento = movimiento;
-        if (movimiento != null) movimiento.initApariencia(this);
-    }
-
     protected abstract void alColisionar(Tarro tarro);
     protected boolean esAtraible() { return false; }
-
-    public float getTiempoEnVida() { return tiempoEnVida; }
-    public float getSpawnX()       { return spawnX; }
 }

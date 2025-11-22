@@ -2,11 +2,9 @@ package com.mygdx.game;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.Circle;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Polygon;
@@ -23,6 +21,7 @@ public class Tarro {
     private Texture escudoImage;
 
     private Texture imanImage;
+    private boolean mirandoDerecha = true;
 
     private Polygon polyBoca;
 
@@ -37,10 +36,6 @@ public class Tarro {
 
     public void setImanTexture(Texture tex) {
         this.imanImage = tex;
-    }
-
-    public Rectangle getArea() {
-        return bucket;
     }
 
     public Rectangle getAABB() {
@@ -65,10 +60,21 @@ public class Tarro {
     }
 
     public void dibujar(SpriteBatch batch) {
+        float drawX = bucket.x;
+        float drawY = bucket.y;
+        float drawW = bucket.width;
+        float drawH = bucket.height;
+
+        if (!mirandoDerecha) {
+            drawX = bucket.x + bucket.width;
+            drawW = -bucket.width;
+        }
+
         if (!herido) {
-            batch.draw(bucketImage, bucket.x, bucket.y, bucket.width, bucket.height);
+            batch.draw(bucketImage, drawX, drawY, drawW, drawH);
         } else {
-            batch.draw(bucketImage, bucket.x, bucket.y + MathUtils.random(-5, 5), bucket.width, bucket.height);
+            float shakeY = drawY + MathUtils.random(-5, 5);
+            batch.draw(bucketImage, drawX, shakeY, drawW, drawH);
             tiempoHerido--;
             if (tiempoHerido <= 0)
                 herido = false;
@@ -79,19 +85,26 @@ public class Tarro {
         }
 
         if (GameManager.getInstance().isImanActivo() && imanImage != null) {
-            float imanWidth = 55f;
-            float imanHeight = 55f;
+            float imanWidth = 60f;
+            float imanHeight = 60f;
             float x = bucket.x + bucket.width / 2f - imanWidth / 2f;
-            float y = bucket.y + bucket.height - 20f;
+            float y = bucket.y + bucket.height - 22f;
             batch.draw(imanImage, x, y, imanWidth, imanHeight);
         }
     }
 
     public void actualizarMovimiento() {
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT))
-            bucket.x -= velx * Gdx.graphics.getDeltaTime();
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT))
-            bucket.x += velx * Gdx.graphics.getDeltaTime();
+        float dt = Gdx.graphics.getDeltaTime();
+
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+            bucket.x -= velx * dt;
+            mirandoDerecha = false;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+            bucket.x += velx * dt;
+            mirandoDerecha = true;
+        }
+
         if (bucket.x < 0) bucket.x = 0;
         if (bucket.x > 800 - bucket.width) bucket.x = 800 - bucket.width;
         syncHitboxes();
@@ -141,7 +154,7 @@ public class Tarro {
         float[] v = new float[segments * 2];
         for (int i = 0; i < segments; i++) {
             float a = (float) (i * Math.PI * 2 / segments);
-            v[2 * i]     = cx + r * (float) Math.cos(a);
+            v[2 * i] = cx + r * (float) Math.cos(a);
             v[2 * i + 1] = cy + r * (float) Math.sin(a);
         }
         return new Polygon(v);

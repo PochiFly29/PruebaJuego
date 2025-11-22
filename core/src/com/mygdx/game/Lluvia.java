@@ -102,13 +102,6 @@ public class Lluvia {
         this.escenario.init(this);
     }
 
-    public Lluvia setTamañoHitbox(int ancho, int alto) { this.ancho = ancho; this.alto = alto; return this; }
-    public Lluvia setDimensionesPantalla(float w, float h) { this.pantallaAncho = w; this.pantallaAlto = h; return this; }
-    public Lluvia setTimers(long normalNs, long tormentaNs) { this.spawnNormalNs = normalNs; this.spawnTormentaNs = tormentaNs; return this; }
-    public Lluvia setProbabilidades(float pBuena, float pMala, float pVida, float pRaras) {
-        this.pBuena = pBuena; this.pMala = pMala; this.pVida = pVida;
-        return this;
-    }
     public Lluvia setRarasDistrib(float pEscudo, float pIman, float pTormenta) {
         this.pEscudo = pEscudo; this.pIman = pIman; this.pTormenta = pTormenta; return this;
     }
@@ -182,9 +175,9 @@ public class Lluvia {
     }
 
     private void spawnCore(TipoSpawn tipo, IMovimientos mov) {
-        float velY   = Math.max(1e-6f, mov.getVelocidadVertical());
+        float velY = Math.max(1e-6f, mov.getVelocidadVertical());
         float deriva = mov.getDerivaHorizontal(pantallaAlto, velY);
-        float rot    = mov.getRotacion();
+        float rot = mov.getRotacion();
 
         float xSpawn = MathUtils.random(0f, Math.max(0f, pantallaAncho - ancho)) - deriva;
         Rectangle hb = new Rectangle(xSpawn, pantallaAlto, ancho, alto);
@@ -214,12 +207,12 @@ public class Lluvia {
 
         float r = MathUtils.random();
         float tBuena = pBuena;
-        float tMala  = tBuena + pMala;
-        float tVida  = tMala  + pVidaActual;
+        float tMala = tBuena + pMala;
+        float tVida = tMala  + pVidaActual;
 
-        if (r < tBuena)  return TipoSpawn.BUENA;
-        if (r < tMala)   return TipoSpawn.MALA;
-        if (r < tVida)   return TipoSpawn.VIDA;
+        if (r < tBuena) return TipoSpawn.BUENA;
+        if (r < tMala) return TipoSpawn.MALA;
+        if (r < tVida) return TipoSpawn.VIDA;
 
         float rr = MathUtils.random();
         float e = pEscudo;

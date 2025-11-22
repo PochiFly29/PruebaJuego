@@ -5,30 +5,27 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 public class GameOverScreen implements Screen {
+
     private final GameLluviaMenu game;
     private SpriteBatch batch;
-    private BitmapFont font;
     private OrthographicCamera camera;
+
+    private Texture gameOverTexture;
 
     public GameOverScreen(final GameLluviaMenu game) {
         this.game = game;
         this.batch = game.getBatch();
-        this.font = game.getFont();
+
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 800, 480);
-        FreeTypeFontGenerator gen = new FreeTypeFontGenerator(Gdx.files.internal("fonts/Roboto.ttf"));
-        FreeTypeFontGenerator.FreeTypeFontParameter p = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        p.size = 28;
-        p.minFilter = Texture.TextureFilter.Linear;
-        p.magFilter = Texture.TextureFilter.Linear;
-        this.font = gen.generateFont(p);
-        gen.dispose();
+
+        // imagen de Game Over
+        gameOverTexture = new Texture(Gdx.files.internal("gameOverScreen.png"));
+        gameOverTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
     }
 
     @Override
@@ -38,51 +35,27 @@ public class GameOverScreen implements Screen {
         batch.setProjectionMatrix(camera.combined);
 
         batch.begin();
-        font.draw(batch, "GAME OVER ", 100, 200);
-        font.draw(batch, "Presiona cualquier tecla para reiniciar.", 100, 100);
+
+        batch.draw(gameOverTexture, 0, 0, 800, 480);
 
         batch.end();
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY) || Gdx.input.justTouched()) {
             game.setScreen(new GameScreen(game));
             dispose();
         }
     }
 
-    @Override
-    public void show() {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void resize(int width, int height) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void pause() {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void resume() {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void hide() {
-        // TODO Auto-generated method stub
-
-    }
+    @Override public void show() {}
+    @Override public void resize(int width, int height) {}
+    @Override public void pause() {}
+    @Override public void resume() {}
+    @Override public void hide() {}
 
     @Override
     public void dispose() {
-        // TODO Auto-generated method stub
-
+        if (gameOverTexture != null) {
+            gameOverTexture.dispose();
+        }
     }
-
 }

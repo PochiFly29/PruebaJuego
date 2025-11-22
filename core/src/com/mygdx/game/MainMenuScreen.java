@@ -69,8 +69,8 @@ public class MainMenuScreen implements Screen {
         genRegular.dispose();
 
         layoutRecolecta = new GlyphLayout(fontRecolecta, "RECOLECTA");
-        layoutGotas     = new GlyphLayout(fontGotas, "GOTAS");
-        layoutPresiona  = new GlyphLayout(fontSubtitulo, "PRESIONA PARA EMPEZAR");
+        layoutGotas = new GlyphLayout(fontGotas, "GOTAS");
+        layoutPresiona = new GlyphLayout(fontSubtitulo, "PRESIONA PARA EMPEZAR");
     }
 
     @Override
@@ -120,11 +120,7 @@ public class MainMenuScreen implements Screen {
         batch.end();
 
         // Entrar al juego
-        if (Gdx.input.isTouched()
-                || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)
-                || Gdx.input.isKeyJustPressed(Input.Keys.ENTER)
-                || Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY)) {
-
+        if (Gdx.input.isTouched() || Gdx.input.isKeyJustPressed(Input.Keys.SPACE) || Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY)) {
             game.setScreen(new GameScreen(game));
             dispose();
         }

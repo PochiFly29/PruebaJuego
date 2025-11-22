@@ -12,7 +12,7 @@ public class GameLluviaMenu extends Game {
     @Override
     public void create() {
         batch = new SpriteBatch();
-        font = new BitmapFont(); // Arial default
+        font = new BitmapFont();
 
         setScreen(new MainMenuScreen(this));
     }
@@ -32,7 +32,4 @@ public class GameLluviaMenu extends Game {
         return batch;
     }
 
-    public BitmapFont getFont() {
-        return font;
-    }
 }
